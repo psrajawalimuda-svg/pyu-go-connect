@@ -13,7 +13,15 @@ export function ProtectedRoute({ requiredRole, requiredPermission }: ProtectedRo
   const { checkPermission, checkAnyPermission } = useRBAC();
   const location = useLocation();
 
-  if (authLoading) {
+  // If not authenticated, redirect to login immediately
+  // Don't wait for loading to complete - if no user, must be unauthenticated
+  if (!user && !authLoading) {
+    const loginPath = location.pathname.startsWith("/driver") ? "/driver/auth" : "/auth";
+    return <Navigate to={loginPath} state={{ from: location }} replace />;
+  }
+
+  // If still loading and no user yet, show loading
+  if (authLoading && !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -21,14 +29,9 @@ export function ProtectedRoute({ requiredRole, requiredPermission }: ProtectedRo
     );
   }
 
-  if (!user) {
-    const loginPath = location.pathname.startsWith("/driver") ? "/driver/auth" : "/auth";
-    return <Navigate to={loginPath} state={{ from: location }} replace />;
-  }
-
-  // Check role if required
-  if (requiredRole && role !== requiredRole && role !== "admin") {
-    return <Navigate to="/forbidden" replace />;
+  // User is authenticated - check role
+  if (user && requiredRole && role !== requiredRole && role !== "admin") {
+    return <Navigate to="/forbidden" state={{ from: location }} replace />;
   }
 
   // Check permission if required
@@ -38,9 +41,10 @@ export function ProtectedRoute({ requiredRole, requiredPermission }: ProtectedRo
       : checkPermission(requiredPermission);
 
     if (!isAllowed) {
-      return <Navigate to="/forbidden" replace />;
+      return <Navigate to="/forbidden" state={{ from: location }} replace />;
     }
   }
 
+  // Render nested routes
   return <Outlet />;
 }

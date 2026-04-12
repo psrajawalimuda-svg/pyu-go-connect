@@ -3,11 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { User, LogOut, Shield, ChevronRight, Car, Bus, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      queryClient.clear();
+      window.location.replace(window.location.origin);
+    } catch (error) {
+      console.error("Sign out error:", error);
+      window.location.replace(window.location.origin);
+    }
+  };
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -106,6 +118,9 @@ export default function Profile() {
       </div>
 
       <div className="px-6 space-y-2">
+        <button onClick={() => alert("Test button")} style={{ padding: '10px', margin: '10px' }}>
+          Test Button
+        </button>
         <ProfileItem label="My Rides" icon={<ChevronRight className="w-4 h-4" />} onClick={() => {}} />
         <ProfileItem label="My Shuttle Bookings" icon={<ChevronRight className="w-4 h-4" />} onClick={() => {}} />
         {isDriver && (
@@ -115,7 +130,14 @@ export default function Profile() {
           <ProfileItem label="Admin Dashboard" icon={<Shield className="w-4 h-4" />} onClick={() => navigate("/admin")} />
         )}
 
-        <Button variant="outline" className="w-full mt-8 text-destructive border-destructive/30" onClick={signOut}>
+        <Button 
+          variant="outline" 
+          className="w-full mt-8 text-destructive border-destructive/30" 
+          onClick={() => { 
+            console.log("onClick called, handleSignOut=", typeof handleSignOut);
+            handleSignOut(); 
+          }}
+        >
           <LogOut className="w-4 h-4 mr-2" /> Sign Out
         </Button>
       </div>

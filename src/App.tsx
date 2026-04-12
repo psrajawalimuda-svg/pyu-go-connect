@@ -83,8 +83,8 @@ const App = () => (
             </Route>
           </Route>
 
-          <Route element={<ProtectedRoute requiredRole="admin" />}>
-            <Route path="/admin" element={<AdminLayout />}>
+          <Route path="admin" element={<ProtectedRoute requiredRole="admin" />}>
+            <Route element={<AdminLayout />}>
               <Route index element={<AdminOverview />} />
               <Route path="rides" element={<AdminRides />} />
               <Route path="shuttles" element={<AdminShuttles />} />
