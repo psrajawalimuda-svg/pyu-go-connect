@@ -19,6 +19,8 @@ const FALLBACK_PRICING: Record<string, { base_fare: number; per_km: number; min_
 
 const SURGE_ACTIVE_RIDES_THRESHOLD = 5;
 
+type ZoneConfig = { name: string; lat: number; lng: number; radius_km: number };
+
 async function getFareConfig(): Promise<Record<string, { base_fare: number; per_km: number; min_fare: number; surge_multiplier: number }>> {
   try {
     const { data } = await supabase
@@ -31,6 +33,28 @@ async function getFareConfig(): Promise<Record<string, { base_fare: number; per_
     // fall through
   }
   return FALLBACK_PRICING;
+}
+
+async function getServiceZones(): Promise<ZoneConfig[]> {
+  try {
+    const { data } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "service_zones")
+      .maybeSingle();
+    if (data?.value && Array.isArray(data.value)) return data.value as ZoneConfig[];
+  } catch (_) {
+    // fall through
+  }
+  return [];
+}
+
+function isInAnyZone(lat: number, lng: number, zones: ZoneConfig[]): string | null {
+  for (const zone of zones) {
+    const dist = haversineKm(lat, lng, zone.lat, zone.lng);
+    if (dist <= zone.radius_km) return zone.name;
+  }
+  return null;
 }
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
