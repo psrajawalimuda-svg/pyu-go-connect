@@ -56,6 +56,182 @@ export type Database = {
         }
         Relationships: []
       }
+      hotel_bookings: {
+        Row: {
+          booking_ref: string
+          check_in: string
+          check_out: string
+          created_at: string
+          guest_name: string | null
+          guest_phone: string | null
+          guests: number
+          hotel_id: string
+          id: string
+          room_id: string
+          special_requests: string | null
+          status: Database["public"]["Enums"]["hotel_booking_status"]
+          total_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          booking_ref?: string
+          check_in: string
+          check_out: string
+          created_at?: string
+          guest_name?: string | null
+          guest_phone?: string | null
+          guests?: number
+          hotel_id: string
+          id?: string
+          room_id: string
+          special_requests?: string | null
+          status?: Database["public"]["Enums"]["hotel_booking_status"]
+          total_price?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          booking_ref?: string
+          check_in?: string
+          check_out?: string
+          created_at?: string
+          guest_name?: string | null
+          guest_phone?: string | null
+          guests?: number
+          hotel_id?: string
+          id?: string
+          room_id?: string
+          special_requests?: string | null
+          status?: Database["public"]["Enums"]["hotel_booking_status"]
+          total_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_bookings_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hotel_bookings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "hotel_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hotel_rooms: {
+        Row: {
+          active: boolean
+          amenities: string[] | null
+          available_rooms: number
+          created_at: string
+          description: string | null
+          hotel_id: string
+          id: string
+          image_url: string | null
+          max_guests: number
+          name: string
+          price_per_night: number
+          total_rooms: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amenities?: string[] | null
+          available_rooms?: number
+          created_at?: string
+          description?: string | null
+          hotel_id: string
+          id?: string
+          image_url?: string | null
+          max_guests?: number
+          name: string
+          price_per_night?: number
+          total_rooms?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amenities?: string[] | null
+          available_rooms?: number
+          created_at?: string
+          description?: string | null
+          hotel_id?: string
+          id?: string
+          image_url?: string | null
+          max_guests?: number
+          name?: string
+          price_per_night?: number
+          total_rooms?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_rooms_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hotels: {
+        Row: {
+          active: boolean
+          address: string
+          amenities: string[] | null
+          city: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          lat: number | null
+          lng: number | null
+          name: string
+          rating: number | null
+          star_rating: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address: string
+          amenities?: string[] | null
+          city: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          lat?: number | null
+          lng?: number | null
+          name: string
+          rating?: number | null
+          star_rating?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string
+          amenities?: string[] | null
+          city?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          rating?: number | null
+          star_rating?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_settings: {
         Row: {
           commission_rate: number
@@ -133,6 +309,7 @@ export type Database = {
           pickup_lat: number
           pickup_lng: number
           rider_id: string
+          service_type: Database["public"]["Enums"]["ride_service_type"]
           status: Database["public"]["Enums"]["ride_status"]
           updated_at: string
         }
@@ -149,6 +326,7 @@ export type Database = {
           pickup_lat: number
           pickup_lng: number
           rider_id: string
+          service_type?: Database["public"]["Enums"]["ride_service_type"]
           status?: Database["public"]["Enums"]["ride_status"]
           updated_at?: string
         }
@@ -165,6 +343,7 @@ export type Database = {
           pickup_lat?: number
           pickup_lng?: number
           rider_id?: string
+          service_type?: Database["public"]["Enums"]["ride_service_type"]
           status?: Database["public"]["Enums"]["ride_status"]
           updated_at?: string
         }
@@ -490,6 +669,8 @@ export type Database = {
       app_role: "admin" | "moderator" | "user"
       booking_status: "confirmed" | "cancelled" | "completed"
       driver_status: "available" | "busy" | "offline"
+      hotel_booking_status: "pending" | "confirmed" | "cancelled" | "completed"
+      ride_service_type: "bike" | "bike_women" | "car"
       ride_status:
         | "pending"
         | "accepted"
@@ -635,6 +816,8 @@ export const Constants = {
       app_role: ["admin", "moderator", "user"],
       booking_status: ["confirmed", "cancelled", "completed"],
       driver_status: ["available", "busy", "offline"],
+      hotel_booking_status: ["pending", "confirmed", "cancelled", "completed"],
+      ride_service_type: ["bike", "bike_women", "car"],
       ride_status: [
         "pending",
         "accepted",
