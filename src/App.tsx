@@ -31,6 +31,7 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminHotels = lazy(() => import("./pages/admin/AdminHotels"));
+const AdminWithdrawals = lazy(() => import("./pages/admin/AdminWithdrawals"));
 
 // Driver pages
 const DriverLayout = lazy(() => import("./pages/driver/DriverLayout"));
@@ -101,6 +102,7 @@ const App = () => (
                 <Route path="drivers" element={<AdminDrivers />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="payments" element={<AdminPayments />} />
+                <Route path="withdrawals" element={<AdminWithdrawals />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
             </Route>
