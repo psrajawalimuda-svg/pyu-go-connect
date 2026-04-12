@@ -327,18 +327,7 @@ function MidtransKeysTab() {
   const qc = useQueryClient();
   const [activeEnv, setActiveEnv] = useState<"sandbox" | "production">("sandbox");
 
-  const { data: configs = [], isLoading } = useQuery({
-    queryKey: ["admin-gateway-configs", "midtrans"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("payment_gateway_configs")
-        .select("*")
-        .eq("gateway", "midtrans");
-      return data || [];
-    },
-  });
-
-  const { data: setting } = useQuery({
+  const { data: setting, isLoading } = useQuery({
     queryKey: ["admin-payment-settings", "midtrans"],
     queryFn: async () => {
       const { data } = await supabase
@@ -350,15 +339,16 @@ function MidtransKeysTab() {
     },
   });
 
+  const config = (setting?.config as Record<string, any>) || {};
+
   useEffect(() => {
-    if (setting?.active_environment) {
-      setActiveEnv(setting.active_environment as "sandbox" | "production");
+    if (config?.active_environment) {
+      setActiveEnv(config.active_environment as "sandbox" | "production");
     }
-  }, [setting]);
+  }, [config?.active_environment]);
 
   const saveConfig = useMutation({
     mutationFn: async (payload: { environment: string; client_key: string; server_key: string }) => {
-      // Kita memanggil edge function 'manage-gateway-keys' untuk enkripsi server key
       const { error } = await supabase.functions.invoke("manage-gateway-keys", {
         body: { 
           action: "update",
@@ -369,7 +359,7 @@ function MidtransKeysTab() {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-gateway-configs", "midtrans"] });
+      qc.invalidateQueries({ queryKey: ["admin-payment-settings", "midtrans"] });
       toast.success("API Keys updated and encrypted successfully");
     },
     onError: (e: any) => toast.error(e.message),
@@ -377,10 +367,12 @@ function MidtransKeysTab() {
 
   const toggleEnv = useMutation({
     mutationFn: async (env: string) => {
+      if (!setting) return;
+      const newConfig = { ...config, active_environment: env };
       const { error } = await supabase
         .from("payment_settings")
-        .update({ active_environment: env })
-        .eq("gateway", "midtrans");
+        .update({ config: newConfig })
+        .eq("id", setting.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -392,8 +384,8 @@ function MidtransKeysTab() {
 
   if (isLoading) return <Loader2 className="w-5 h-5 animate-spin mx-auto mt-8" />;
 
-  const sandboxConfig = configs.find(c => c.environment === "sandbox") || { client_key: "" };
-  const productionConfig = configs.find(c => c.environment === "production") || { client_key: "" };
+  const sandboxClientKey = (config?.sandbox_client_key as string) || "";
+  const productionClientKey = (config?.production_client_key as string) || "";
 
   return (
     <div className="space-y-6">
@@ -408,48 +400,43 @@ function MidtransKeysTab() {
               <CardDescription>Pilih environment yang akan digunakan untuk transaksi real-time.</CardDescription>
             </div>
             <div className="flex items-center gap-4 bg-background p-2 rounded-lg border">
-              <div className="flex items-center space-x-2">
-                <RadioGroup 
-                  value={activeEnv} 
-                  onValueChange={(v) => {
-                    const newEnv = v as "sandbox" | "production";
-                    setActiveEnv(newEnv);
-                    toggleEnv.mutate(newEnv);
-                  }}
-                  className="flex"
-                >
-                  <div className="flex items-center space-x-2 mr-4">
-                    <RadioGroupItem value="sandbox" id="sandbox" />
-                    <Label htmlFor="sandbox">Sandbox</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="production" id="production" />
-                    <Label htmlFor="production">Production</Label>
-                  </div>
-                </RadioGroup>
-              </div>
+              <RadioGroup 
+                value={activeEnv} 
+                onValueChange={(v) => {
+                  const newEnv = v as "sandbox" | "production";
+                  setActiveEnv(newEnv);
+                  toggleEnv.mutate(newEnv);
+                }}
+                className="flex"
+              >
+                <div className="flex items-center space-x-2 mr-4">
+                  <RadioGroupItem value="sandbox" id="sandbox" />
+                  <Label htmlFor="sandbox">Sandbox</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="production" id="production" />
+                  <Label htmlFor="production">Production</Label>
+                </div>
+              </RadioGroup>
             </div>
           </div>
         </CardHeader>
       </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Sandbox Config */}
         <ConfigForm 
           title="Sandbox Keys" 
           description="Gunakan key dari dashboard Midtrans Sandbox."
           env="sandbox"
-          initialClientKey={sandboxConfig.client_key}
+          initialClientKey={sandboxClientKey}
           onSave={(data) => saveConfig.mutate({ ...data, environment: "sandbox" })}
           isPending={saveConfig.isPending}
         />
-
-        {/* Production Config */}
         <ConfigForm 
           title="Production Keys" 
           description="Gunakan key dari dashboard Midtrans Production (Sangat Rahasia)."
           env="production"
-          initialClientKey={productionConfig.client_key}
+          initialClientKey={productionClientKey}
           onSave={(data) => saveConfig.mutate({ ...data, environment: "production" })}
           isPending={saveConfig.isPending}
         />
