@@ -33,13 +33,13 @@ export function AdsBanner({ placement = "dashboard_banner" }: { placement?: AdPl
     ads.forEach((ad) => {
       if (!trackedRef.current.has(ad.id)) {
         trackedRef.current.add(ad.id);
-        supabase.rpc('increment_ad_metric', { p_ad_id: ad.id, p_type: 'view' }).then(() => {}).catch(() => {});
+        void supabase.rpc('increment_ad_metric', { p_ad_id: ad.id, p_type: 'view' });
       }
     });
   }, [ads]);
 
   const handleAdClick = async (ad: Tables<"ads">) => {
-    supabase.rpc('increment_ad_metric', { p_ad_id: ad.id, p_type: 'click' }).then(() => {}).catch(() => {});
+    void supabase.rpc('increment_ad_metric', { p_ad_id: ad.id, p_type: 'click' });
     if (ad.link_url) {
       if (ad.link_url.startsWith('http')) {
         window.open(ad.link_url, '_blank', 'noopener,noreferrer');
