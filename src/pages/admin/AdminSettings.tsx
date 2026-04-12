@@ -9,7 +9,9 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { MapContainer, TileLayer, Circle, Popup, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 
 type FareConfig = {
   base_fare: number;
