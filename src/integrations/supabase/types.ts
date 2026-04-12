@@ -364,6 +364,8 @@ export type Database = {
           guest_name: string | null
           guest_phone: string | null
           id: string
+          payment_method: string | null
+          payment_status: string
           schedule_id: string
           seat_count: number
           status: Database["public"]["Enums"]["booking_status"]
@@ -377,6 +379,8 @@ export type Database = {
           guest_name?: string | null
           guest_phone?: string | null
           id?: string
+          payment_method?: string | null
+          payment_status?: string
           schedule_id: string
           seat_count?: number
           status?: Database["public"]["Enums"]["booking_status"]
@@ -390,6 +394,8 @@ export type Database = {
           guest_name?: string | null
           guest_phone?: string | null
           id?: string
+          payment_method?: string | null
+          payment_status?: string
           schedule_id?: string
           seat_count?: number
           status?: Database["public"]["Enums"]["booking_status"]
