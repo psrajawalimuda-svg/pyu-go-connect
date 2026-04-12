@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { MapView } from "@/components/map/MapView";
 import { useRideStore } from "@/stores/rideStore";
 import { ServiceSelector } from "@/components/ride/ServiceSelector";
@@ -151,7 +151,7 @@ export default function Ride() {
       <MapView
         pickup={pickup} dropoff={dropoff} drivers={driverMarkers}
         onMapClick={handleMapClick}
-        onRouteInfo={(dist, dur) => { setDistanceKm(Math.round(dist * 100) / 100); setDurationMin(Math.round(dur)); }}
+        onRouteInfo={useCallback((dist: number, dur: number) => { setDistanceKm(Math.round(dist * 100) / 100); setDurationMin(Math.round(dur)); }, [])}
         className="w-full h-full"
       />
 
