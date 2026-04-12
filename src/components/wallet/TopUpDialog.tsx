@@ -78,16 +78,20 @@ export function TopUpDialog({
         };
 
         const existingScript = document.getElementById("midtrans-snap") as HTMLScriptElement;
+        const currentKey = existingScript?.getAttribute("data-client-key");
         
-        if (!existingScript || !existingScript.getAttribute("data-client-key")) {
-          // Re-load if missing or attribute is gone
+        if (!existingScript || currentKey !== clientKey) {
+          // Re-load if missing or key is different
           if (existingScript) existingScript.remove();
           
           const script = document.createElement("script");
           script.id = "midtrans-snap";
           script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
           script.setAttribute("data-client-key", clientKey);
-          script.onload = triggerSnap;
+          script.onload = () => {
+            // Give it a tiny bit of time to initialize internal state
+            setTimeout(triggerSnap, 100);
+          };
           document.head.appendChild(script);
         } else {
           triggerSnap();
