@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Car, Bus, Building2, MapPin, Clock } from "lucide-react";
+import { Car, Bus, Building2, MapPin, Clock, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,10 +7,64 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { PromoSection } from "@/components/home/PromoSection";
 import { AdsBanner } from "@/components/home/AdsBanner";
+import { useEffect } from "react";
 
 export default function Index() {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Wallet balance fetching
+  const { data: wallet, refetch: refetchWallet } = useQuery({
+    queryKey: ["wallet", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from("wallets")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      
+      if (!data) {
+        // Auto-create wallet if not exists
+        const { data: newWallet, error: insertError } = await supabase
+          .from("wallets")
+          .insert({ user_id: user.id, wallet_type: "user" })
+          .select("*")
+          .single();
+        if (insertError) throw insertError;
+        return newWallet;
+      }
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Realtime subscription for wallet balance updates
+  useEffect(() => {
+    if (!user || !wallet?.id) return;
+    
+    const channel = supabase
+      .channel(`wallet-updates-${wallet.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "wallets",
+          filter: `id=eq.${wallet.id}`,
+        },
+        () => {
+          refetchWallet();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, wallet?.id, refetchWallet]);
 
   const { data: recentRides } = useQuery({
     queryKey: ["recent-rides", user?.id],
@@ -30,9 +84,23 @@ export default function Index() {
     <div className="flex flex-col min-h-screen">
       {/* Hero */}
       <div className="gradient-primary px-6 pt-12 pb-8 rounded-b-3xl">
-        <div className="flex items-center gap-3 mb-6">
-          <img src="/pyu_go_icon.png" alt="PYU GO" className="w-10 h-10 rounded-xl" />
-          <h1 className="text-2xl font-extrabold text-primary-foreground">PYU GO</h1>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <img src="/pyu_go_icon.png" alt="PYU GO" className="w-10 h-10 rounded-xl" />
+            <h1 className="text-2xl font-extrabold text-primary-foreground">PYU GO</h1>
+          </div>
+          
+          {user && (
+            <button 
+              onClick={() => navigate("/wallet")}
+              className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full text-primary-foreground hover:bg-white/30 transition-all"
+            >
+              <Wallet className="w-4 h-4" />
+              <span className="text-sm font-bold">
+                Rp {(wallet?.balance || 0).toLocaleString("id-ID")}
+              </span>
+            </button>
+          )}
         </div>
         <p className="text-primary-foreground/80 text-sm mb-6">
           {user ? `Welcome back, ${user.user_metadata?.full_name ?? "rider"}!` : "Your super app for rides & shuttles"}
