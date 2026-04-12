@@ -1,25 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { MapView } from "@/components/map/MapView";
 import { useRideStore } from "@/stores/rideStore";
-import { ServiceSelector } from "@/components/ride/ServiceSelector";
+import { RideStatusOverlay } from "@/components/ride/RideStatusOverlay";
 import { LocationSearchInput } from "@/components/ride/LocationSearchInput";
 import { useAuth } from "@/hooks/useAuth";
 import { useDriverTracking } from "@/hooks/useDriverTracking";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { MapPin, Navigation, DollarSign, X, Loader2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
-async function reverseGeocode(lat: number, lng: number): Promise<string> {
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
-    const data = await res.json();
-    return data.display_name?.split(",").slice(0, 3).join(",") ?? `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-  } catch {
-    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-  }
-}
+import { reverseGeocode } from "@/lib/location";
 
 export default function Ride() {
   const { user } = useAuth();
@@ -193,91 +182,19 @@ export default function Ride() {
         </div>
       </div>
 
-      {/* Selection mode indicator */}
-      {rideStatus === "idle" && (
-        <div className="absolute top-[140px] left-1/2 -translate-x-1/2 z-10">
-          <div className="bg-foreground/80 text-background text-xs font-semibold px-4 py-2 rounded-full">
-            <MapPin className="w-3 h-3 inline mr-1" />
-            {selectingMode === "pickup" ? "Select pick-up location" : "Select drop-off location"}
-          </div>
-        </div>
-      )}
-
-      {/* Service selection panel */}
-      {rideStatus === "selecting_service" && (
-        <div className="absolute bottom-20 left-4 right-4 z-10 animate-slide-up">
-          <div className="bg-card rounded-2xl p-5 shadow-xl border border-border">
-            <div className="flex justify-between items-center mb-3">
-              <div />
-              <button onClick={resetRide} className="text-muted-foreground"><X className="w-5 h-5" /></button>
-            </div>
-            <ServiceSelector selected={serviceType} onSelect={handleServiceSelect} loading={fareLoading} />
-            {fareLoading && (
-              <div className="flex items-center justify-center gap-2 mt-3 text-sm text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" /> Calculating fare...
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Confirming panel */}
-      {rideStatus === "confirming" && fare && (
-        <div className="absolute bottom-20 left-4 right-4 z-10 animate-slide-up">
-          <div className="bg-card rounded-2xl p-5 shadow-xl border border-border">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg">Ride Summary</h3>
-              <button onClick={resetRide} className="text-muted-foreground"><X className="w-5 h-5" /></button>
-            </div>
-            <div className="flex items-center gap-3 mb-2 text-xs text-muted-foreground">
-              <span className="capitalize">{serviceType.replace("_", " ")}</span>
-              {distanceKm && <span>• {distanceKm.toFixed(1)} km</span>}
-              {durationMin && (
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> ~{durationMin} menit
-                </span>
-              )}
-            </div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-primary" />
-                <span className="text-2xl font-extrabold">Rp {fare.toLocaleString("id-ID")}</span>
-              </div>
-              <button onClick={() => setRideStatus("selecting_service")} className="text-xs text-primary underline">Change service</button>
-            </div>
-            <Button className="w-full gradient-primary text-primary-foreground font-bold" size="lg" onClick={handleRequestRide}>
-              <Navigation className="w-4 h-4 mr-2" /> Request Ride
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {rideStatus === "searching" && (
-        <div className="absolute bottom-20 left-4 right-4 z-10 animate-slide-up">
-          <div className="bg-card rounded-2xl p-6 shadow-xl border border-border text-center">
-            <Loader2 className="w-12 h-12 mx-auto mb-3 text-primary animate-spin" />
-            <p className="font-bold">Finding your driver...</p>
-            <p className="text-sm text-muted-foreground mt-1">Please wait</p>
-          </div>
-        </div>
-      )}
-
-      {rideStatus === "accepted" && (
-        <div className="absolute bottom-20 left-4 right-4 z-10 animate-slide-up">
-          <div className="bg-card rounded-2xl p-5 shadow-xl border border-border">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Navigation className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <p className="font-bold">Driver is on the way!</p>
-                <p className="text-xs text-muted-foreground">Arriving soon</p>
-              </div>
-            </div>
-            <Button variant="outline" className="w-full" onClick={resetRide}>Cancel Ride</Button>
-          </div>
-        </div>
-      )}
+      <RideStatusOverlay
+        rideStatus={rideStatus}
+        selectingMode={selectingMode}
+        serviceType={serviceType}
+        fare={fare}
+        fareLoading={fareLoading}
+        distanceKm={distanceKm}
+        durationMin={durationMin}
+        onReset={resetRide}
+        onServiceSelect={handleServiceSelect}
+        onRequestRide={handleRequestRide}
+        onStatusChange={setRideStatus}
+      />
     </div>
   );
 }
