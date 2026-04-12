@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, Trash2, Edit, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -315,11 +315,13 @@ export default function RoutesTab() {
         </div>
       )}
 
-      {/* Route Dialog */}
       <Dialog open={routeDialogOpen} onOpenChange={setRouteDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editRoute ? "Edit Rute" : "Tambah Rute"}</DialogTitle>
+            <DialogDescription>
+              {editRoute ? "Ubah detail rute shuttle yang sudah ada." : "Tambahkan rute shuttle baru ke sistem."}
+            </DialogDescription>
           </DialogHeader>
           <RouteForm route={editRoute} onClose={() => setRouteDialogOpen(false)} />
         </DialogContent>
@@ -330,6 +332,9 @@ export default function RoutesTab() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editSchedule ? "Edit Jadwal" : "Tambah Jadwal"}</DialogTitle>
+            <DialogDescription>
+              {editSchedule ? "Ubah waktu keberangkatan dan ketersediaan kursi." : "Tentukan waktu keberangkatan baru untuk rute ini."}
+            </DialogDescription>
           </DialogHeader>
           <ScheduleForm schedule={editSchedule} routeId={scheduleRouteId} onClose={() => setScheduleDialogOpen(false)} />
         </DialogContent>

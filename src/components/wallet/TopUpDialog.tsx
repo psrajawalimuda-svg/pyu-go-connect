@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,6 +82,9 @@ export function TopUpDialog({
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Top Up Wallet</DialogTitle>
+          <DialogDescription>
+            Pilih atau masukkan jumlah saldo yang ingin Anda tambahkan ke dompet.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

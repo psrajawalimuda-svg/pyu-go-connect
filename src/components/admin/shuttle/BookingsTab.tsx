@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -65,6 +65,12 @@ export default function BookingsTab() {
       )}
       <Dialog open={!!ticketBooking} onOpenChange={() => setTicketBooking(null)}>
         <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Tiket Shuttle</DialogTitle>
+            <DialogDescription>
+              Detail tiket untuk referensi booking {ticketBooking?.booking_ref}.
+            </DialogDescription>
+          </DialogHeader>
           {ticketBooking && (
             <ShuttleTicket
               bookingRef={ticketBooking.booking_ref}

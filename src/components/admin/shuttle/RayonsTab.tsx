@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, Trash2, Edit, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
@@ -212,7 +212,12 @@ export default function RayonsTab() {
       )}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{editRayon ? "Edit Rayon" : "Tambah Rayon"}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editRayon ? "Edit Rayon" : "Tambah Rayon"}</DialogTitle>
+            <DialogDescription>
+              {editRayon ? "Ubah detail rayon dan titik jemput yang tersedia." : "Tambahkan rayon baru dan tentukan titik jemputnya."}
+            </DialogDescription>
+          </DialogHeader>
           <RayonForm rayon={editRayon} onClose={() => setDialogOpen(false)} />
         </DialogContent>
       </Dialog>

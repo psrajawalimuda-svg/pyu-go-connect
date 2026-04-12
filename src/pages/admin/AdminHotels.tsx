@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Loader2, Trash2, Building2 } from "lucide-react";
 import { toast } from "sonner";
@@ -105,7 +105,12 @@ export default function AdminHotels() {
             <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Add Hotel</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Add Hotel</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>Add Hotel</DialogTitle>
+              <DialogDescription>
+                Masukkan detail hotel baru untuk ditampilkan di aplikasi.
+              </DialogDescription>
+            </DialogHeader>
             <form onSubmit={handleAddHotel} className="space-y-3">
               <div><Label className="text-xs">Name</Label><Input name="name" required /></div>
               <div className="grid grid-cols-2 gap-3">
@@ -149,7 +154,12 @@ export default function AdminHotels() {
                             <Button size="sm" variant="outline" className="text-xs h-7"><Plus className="w-3 h-3 mr-1" />Room</Button>
                           </DialogTrigger>
                           <DialogContent>
-                            <DialogHeader><DialogTitle>Add Room to {h.name}</DialogTitle></DialogHeader>
+                            <DialogHeader>
+                              <DialogTitle>Add Room to {h.name}</DialogTitle>
+                              <DialogDescription>
+                                Masukkan detail kamar baru untuk hotel ini.
+                              </DialogDescription>
+                            </DialogHeader>
                             <form onSubmit={(e) => handleAddRoom(e, h.id)} className="space-y-3">
                               <div><Label className="text-xs">Room Name</Label><Input name="name" required placeholder="Deluxe" /></div>
                               <div className="grid grid-cols-2 gap-3">
