@@ -6,6 +6,7 @@ const driverNav = [
   { to: "/driver", icon: LayoutDashboard, label: "Dashboard", end: true },
   { to: "/driver/ride", icon: Navigation, label: "Ride Aktif" },
   { to: "/driver/earnings", icon: Wallet, label: "Pendapatan" },
+  { to: "/driver/wallet", icon: Wallet, label: "Wallet" },
   { to: "/driver/history", icon: History, label: "Riwayat" },
 ];
 
