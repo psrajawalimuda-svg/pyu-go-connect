@@ -54,18 +54,44 @@ Deno.serve(async (req) => {
       wallet = newWallet;
     }
 
-    // Determine gateway
+    // Determine gateway and environment
     let gateway = requestedGateway;
     if (!gateway) {
       const { data: defaultGw } = await supabaseAdmin.from("payment_settings").select("gateway").eq("is_default", true).eq("is_active", true).single();
       gateway = defaultGw?.gateway || "midtrans";
     }
 
-    // Verify gateway is active
+    // Verify gateway is active and get environment
     const { data: gwSettings } = await supabaseAdmin.from("payment_settings").select("*").eq("gateway", gateway).eq("is_active", true).single();
     if (!gwSettings) {
       return new Response(JSON.stringify({ error: `Payment gateway '${gateway}' is not active` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    // Get API Key from database based on active environment
+    const activeEnv = gwSettings.active_environment || "sandbox";
+    const { data: gatewayConfig } = await supabaseAdmin
+      .from("payment_gateway_configs")
+      .select("*")
+      .eq("gateway", gateway)
+      .eq("environment", activeEnv)
+      .single();
+
+    if (!gatewayConfig) {
+      return new Response(JSON.stringify({ error: `API Keys for '${gateway}' in '${activeEnv}' environment are not configured` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Decrypt server key (Simple XOR match with manage-gateway-keys function)
+    const ENCRYPTION_KEY = Deno.env.get("INTERNAL_ENCRYPTION_KEY") || "default-secret-key";
+    function decrypt(encryptedText: string): string {
+      const decoded = atob(encryptedText);
+      const result = [];
+      for (let i = 0; i < decoded.length; i++) {
+        result.push(String.fromCharCode(decoded.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length)));
+      }
+      return result.join("");
+    }
+    const serverKey = decrypt(gatewayConfig.server_key_encrypted);
+    const clientKey = gatewayConfig.client_key;
 
     const orderId = `TOPUP-${user.id.slice(0, 8)}-${Date.now()}`;
 
@@ -76,7 +102,7 @@ Deno.serve(async (req) => {
       amount,
       balance_after: 0,
       reference_id: orderId,
-      description: `Top-up via ${gateway}`,
+      description: `Top-up via ${gateway} (${activeEnv})`,
       status: "pending",
       payment_gateway: gateway,
     }).select("id").single();
@@ -85,11 +111,7 @@ Deno.serve(async (req) => {
     let paymentData: Record<string, unknown> = {};
 
     if (gateway === "midtrans") {
-      const serverKey = Deno.env.get("MIDTRANS_SERVER_KEY");
-      if (!serverKey) throw new Error("MIDTRANS_SERVER_KEY not configured");
-
-      const isSandbox = gwSettings.config?.environment === "sandbox";
-      const baseUrl = isSandbox ? "https://app.sandbox.midtrans.com/snap/v1" : "https://app.midtrans.com/snap/v1";
+      const baseUrl = activeEnv === "sandbox" ? "https://app.sandbox.midtrans.com/snap/v1" : "https://app.midtrans.com/snap/v1";
 
       const resp = await fetch(`${baseUrl}/transactions`, {
         method: "POST",
@@ -109,7 +131,12 @@ Deno.serve(async (req) => {
       // Update transaction with gateway ref
       await supabaseAdmin.from("wallet_transactions").update({ gateway_transaction_id: snapData.token }).eq("id", txn.id);
 
-      paymentData = { token: snapData.token, redirect_url: snapData.redirect_url, gateway: "midtrans" };
+      paymentData = { 
+        token: snapData.token, 
+        redirect_url: snapData.redirect_url, 
+        gateway: "midtrans",
+        client_key: clientKey // Send client key to frontend
+      };
     } else if (gateway === "xendit") {
       const secretKey = Deno.env.get("XENDIT_SECRET_KEY");
       if (!secretKey) throw new Error("XENDIT_SECRET_KEY not configured");

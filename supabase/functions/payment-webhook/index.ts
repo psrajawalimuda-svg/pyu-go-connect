@@ -37,14 +37,50 @@ Deno.serve(async (req: Request) => {
 async function handleMidtrans(supabase: any, body: any) {
   const { order_id, transaction_status, fraud_status, signature_key, status_code, gross_amount } = body;
 
-  // Verify signature
-  const serverKey = Deno.env.get("MIDTRANS_SERVER_KEY");
-  if (serverKey && signature_key) {
-    const raw = order_id + status_code + gross_amount + serverKey;
-    const hash = await crypto.subtle.digest("SHA-512", new TextEncoder().encode(raw));
-    const expected = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
-    if (expected !== signature_key) {
-      return new Response(JSON.stringify({ error: "Invalid signature" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  // 1. Get gateway settings to determine active environment
+  const { data: gwSettings } = await supabase.from("payment_settings").select("*").eq("gateway", "midtrans").single();
+  const activeEnv = gwSettings?.active_environment || "sandbox";
+
+  // 2. Get API Key from database for signature verification
+  const { data: gatewayConfig } = await supabase
+    .from("payment_gateway_configs")
+    .select("*")
+    .eq("gateway", "midtrans")
+    .eq("environment", activeEnv)
+    .single();
+
+  if (gatewayConfig) {
+    // Decrypt server key
+    const ENCRYPTION_KEY = Deno.env.get("INTERNAL_ENCRYPTION_KEY") || "default-secret-key";
+    function decrypt(encryptedText: string): string {
+      const decoded = atob(encryptedText);
+      const result = [];
+      for (let i = 0; i < decoded.length; i++) {
+        result.push(String.fromCharCode(decoded.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length)));
+      }
+      return result.join("");
+    }
+    const serverKey = decrypt(gatewayConfig.server_key_encrypted);
+
+    // Verify signature
+    if (signature_key) {
+      const raw = order_id + status_code + gross_amount + serverKey;
+      const hash = await crypto.subtle.digest("SHA-512", new TextEncoder().encode(raw));
+      const expected = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
+      if (expected !== signature_key) {
+        return new Response(JSON.stringify({ error: "Invalid signature" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+  } else {
+    // Fallback to env variable if not in database (for migration period)
+    const serverKey = Deno.env.get("MIDTRANS_SERVER_KEY");
+    if (serverKey && signature_key) {
+      const raw = order_id + status_code + gross_amount + serverKey;
+      const hash = await crypto.subtle.digest("SHA-512", new TextEncoder().encode(raw));
+      const expected = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
+      if (expected !== signature_key) {
+        return new Response(JSON.stringify({ error: "Invalid signature" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
   }
 
