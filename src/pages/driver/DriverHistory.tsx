@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Clock } from "lucide-react";
+import { ListPageSkeleton } from "@/components/ui/page-skeleton";
 
 export default function DriverHistory() {
   const { driverId } = useDriverStore();
@@ -25,7 +26,7 @@ export default function DriverHistory() {
 
   const fmt = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 
-  if (isLoading) return <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">Memuat...</div>;
+  if (isLoading) return <ListPageSkeleton />;
 
   return (
     <div className="px-4 pt-4 space-y-3">
@@ -51,9 +52,7 @@ export default function DriverHistory() {
                 <span className="line-clamp-1">{r.dropoff_address || "Lokasi tujuan"}</span>
               </div>
             </div>
-            {r.distance_km && (
-              <p className="text-[10px] text-muted-foreground">{Number(r.distance_km).toFixed(1)} km</p>
-            )}
+            {r.distance_km && <p className="text-[10px] text-muted-foreground">{Number(r.distance_km).toFixed(1)} km</p>}
           </CardContent>
         </Card>
       ))}

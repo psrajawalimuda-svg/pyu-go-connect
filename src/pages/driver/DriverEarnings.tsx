@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wallet, ArrowDownToLine, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { WalletPageSkeleton } from "@/components/ui/page-skeleton";
 
 export default function DriverEarnings() {
   const { driverId } = useDriverStore();
@@ -25,7 +26,7 @@ export default function DriverEarnings() {
     return now.toISOString();
   };
 
-  const { data: earnings } = useQuery({
+  const { data: earnings, isLoading: earningsLoading } = useQuery({
     queryKey: ["driver-earnings", driverId, period],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -40,7 +41,6 @@ export default function DriverEarnings() {
     enabled: !!driverId,
   });
 
-  // Pending earnings (all time, for withdraw)
   const { data: pendingTotal } = useQuery({
     queryKey: ["driver-pending-earnings", driverId],
     queryFn: async () => {
@@ -77,6 +77,8 @@ export default function DriverEarnings() {
   const totalNet = earnings?.reduce((s, e) => s + Number(e.net_earning), 0) ?? 0;
   const fmt = (n: number) => new Intl.NumberFormat("id-ID").format(n);
 
+  if (earningsLoading) return <WalletPageSkeleton />;
+
   return (
     <div className="px-4 pt-4 space-y-4">
       <Tabs value={period} onValueChange={(v) => setPeriod(v as any)}>
@@ -87,7 +89,6 @@ export default function DriverEarnings() {
         </TabsList>
       </Tabs>
 
-      {/* Summary */}
       <Card className="bg-emerald-600 text-white border-0">
         <CardContent className="p-4 text-center">
           <Wallet className="w-8 h-8 mx-auto mb-2 opacity-80" />
@@ -96,15 +97,12 @@ export default function DriverEarnings() {
         </CardContent>
       </Card>
 
-      {/* Withdraw section */}
       {(pendingTotal ?? 0) > 0 && (
         <Card className="border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">Saldo Pending</p>
-              <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
-                Rp {fmt(pendingTotal ?? 0)}
-              </p>
+              <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">Rp {fmt(pendingTotal ?? 0)}</p>
             </div>
             <Button
               size="sm"
@@ -115,10 +113,7 @@ export default function DriverEarnings() {
               {withdrawMutation.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <>
-                  <ArrowDownToLine className="w-4 h-4 mr-1" />
-                  Withdraw
-                </>
+                <><ArrowDownToLine className="w-4 h-4 mr-1" /> Withdraw</>
               )}
             </Button>
           </CardContent>
@@ -140,7 +135,6 @@ export default function DriverEarnings() {
         </Card>
       </div>
 
-      {/* Earnings list */}
       <div className="space-y-2">
         <h3 className="font-semibold text-sm">Detail Pendapatan</h3>
         {!earnings?.length && <p className="text-sm text-muted-foreground">Belum ada pendapatan.</p>}

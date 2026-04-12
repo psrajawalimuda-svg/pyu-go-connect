@@ -17,8 +17,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DriverPageSkeleton } from "@/components/ui/page-skeleton";
 
 L.Icon.Default.mergeOptions({ iconUrl, shadowUrl });
 
@@ -28,7 +28,6 @@ export default function DriverDashboard() {
   const queryClient = useQueryClient();
   const { isOnline, setOnline, setDriverId, driverId, currentRideId } = useDriverStore();
 
-  // Fetch driver profile
   const { data: driver, isLoading: driverLoading } = useQuery({
     queryKey: ["driver-profile", user?.id],
     queryFn: async () => {
@@ -43,7 +42,6 @@ export default function DriverDashboard() {
     enabled: !!user,
   });
 
-  // Fetch vehicles separately
   const { data: vehicles = [] } = useQuery({
     queryKey: ["driver-vehicles", driverId],
     queryFn: async () => {
@@ -59,8 +57,7 @@ export default function DriverDashboard() {
 
   const updateVehicleMutation = useMutation({
     mutationFn: async (vehicleId: string) => {
-      const { error } = await (supabase
-        .from("drivers") as any)
+      const { error } = await (supabase.from("drivers") as any)
         .update({ current_vehicle_id: vehicleId })
         .eq("id", driverId!);
       if (error) throw error;
@@ -78,7 +75,6 @@ export default function DriverDashboard() {
     }
   }, [driver, setDriverId, setOnline]);
 
-  // Today's stats
   const { data: todayStats } = useQuery({
     queryKey: ["driver-today-stats", driverId],
     queryFn: async () => {
@@ -98,12 +94,10 @@ export default function DriverDashboard() {
   useDriverLocation();
   useIncomingRide();
 
-  // Navigate to active ride if one is set
   useEffect(() => {
     if (currentRideId) navigate("/driver/ride");
   }, [currentRideId, navigate]);
 
-  // Toggle online/offline
   const toggleMutation = useMutation({
     mutationFn: async (online: boolean) => {
       const newStatus = online ? "available" : "offline";
@@ -115,13 +109,7 @@ export default function DriverDashboard() {
     },
   });
 
-  if (driverLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted-foreground">Memuat...</p>
-      </div>
-    );
-  }
+  if (driverLoading) return <DriverPageSkeleton />;
 
   if (!driver) {
     return (
@@ -133,7 +121,6 @@ export default function DriverDashboard() {
 
   return (
     <div className="space-y-4">
-      {/* Status toggle */}
       <div className="px-4 pt-4">
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
@@ -166,17 +153,13 @@ export default function DriverDashboard() {
         </Card>
       </div>
 
-      {/* Vehicle Selection */}
       <div className="px-4">
         <Card>
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
               <Car className="w-4 h-4" /> Kendaraan Aktif
             </div>
-            <Select 
-              value={driver.current_vehicle_id || ""} 
-              onValueChange={(val) => updateVehicleMutation.mutate(val)}
-            >
+            <Select value={driver.current_vehicle_id || ""} onValueChange={(val) => updateVehicleMutation.mutate(val)}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih Kendaraan" />
               </SelectTrigger>
@@ -193,15 +176,12 @@ export default function DriverDashboard() {
               </SelectContent>
             </Select>
             {!driver.current_vehicle_id && (
-              <p className="text-[10px] text-amber-600 font-medium">
-                * Pilih kendaraan untuk mulai menerima order
-              </p>
+              <p className="text-[10px] text-amber-600 font-medium">* Pilih kendaraan untuk mulai menerima order</p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Stats */}
       <div className="px-4 grid grid-cols-3 gap-3">
         <Card>
           <CardContent className="p-3 text-center">
@@ -213,9 +193,7 @@ export default function DriverDashboard() {
         <Card>
           <CardContent className="p-3 text-center">
             <DollarSign className="w-5 h-5 mx-auto text-emerald-600 mb-1" />
-            <p className="text-xl font-bold">
-              {new Intl.NumberFormat("id-ID").format(todayStats?.earning ?? 0)}
-            </p>
+            <p className="text-xl font-bold">{new Intl.NumberFormat("id-ID").format(todayStats?.earning ?? 0)}</p>
             <p className="text-[10px] text-muted-foreground">Pendapatan</p>
           </CardContent>
         </Card>
@@ -228,7 +206,6 @@ export default function DriverDashboard() {
         </Card>
       </div>
 
-      {/* Map */}
       <div className="px-4">
         <Card className="overflow-hidden">
           <div className="h-64">

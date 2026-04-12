@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,13 +7,9 @@ import { cn } from "@/lib/utils";
 
 type AdPlacement = Database["public"]["Enums"]["ad_placement"];
 
-/**
- * AdsBanner Component
- * 
- * Displays active advertisements based on placement.
- * Includes automatic view and click tracking via Supabase RPC.
- */
 export function AdsBanner({ placement = "dashboard_banner" }: { placement?: AdPlacement }) {
+  const trackedRef = useRef<Set<string>>(new Set());
+
   const { data: ads, isLoading } = useQuery({
     queryKey: ["active-ads", placement],
     queryFn: async () => {
@@ -26,29 +23,27 @@ export function AdsBanner({ placement = "dashboard_banner" }: { placement?: AdPl
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-
-      // Track views for each ad
-      if (data && data.length > 0) {
-        data.forEach(async (ad) => {
-          const { error: rpcError } = await supabase.rpc('increment_ad_metric', { p_ad_id: ad.id, p_type: 'view' });
-          if (rpcError) console.error("Error incrementing ad metric:", rpcError);
-        });
-      }
-
       return data as Tables<"ads">[];
     },
   });
 
+  // Track views separately to avoid re-tracking on cache hits
+  useEffect(() => {
+    if (!ads?.length) return;
+    ads.forEach((ad) => {
+      if (!trackedRef.current.has(ad.id)) {
+        trackedRef.current.add(ad.id);
+        void supabase.rpc('increment_ad_metric', { p_ad_id: ad.id, p_type: 'view' });
+      }
+    });
+  }, [ads]);
+
   const handleAdClick = async (ad: Tables<"ads">) => {
-    // Track click
-    const { error: rpcError } = await supabase.rpc('increment_ad_metric', { p_ad_id: ad.id, p_type: 'click' });
-    if (rpcError) console.error("Error incrementing ad metric:", rpcError);
-    
+    void supabase.rpc('increment_ad_metric', { p_ad_id: ad.id, p_type: 'click' });
     if (ad.link_url) {
       if (ad.link_url.startsWith('http')) {
         window.open(ad.link_url, '_blank', 'noopener,noreferrer');
       } else {
-        // Handle internal routing if link_url is a path
         window.location.href = ad.link_url;
       }
     }

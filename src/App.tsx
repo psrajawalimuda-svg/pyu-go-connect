@@ -6,41 +6,56 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Shuttle from "./pages/Shuttle";
-import Profile from "./pages/Profile";
-import Wallet from "./pages/Wallet";
-import Hotel from "./pages/Hotel";
-import HotelDetail from "./pages/HotelDetail";
-import AdminLayout from "./pages/admin/AdminLayout";
-import AdminOverview from "./pages/admin/AdminOverview";
-import AdminRides from "./pages/admin/AdminRides";
-import AdminShuttles from "./pages/admin/AdminShuttles";
-import AdminDrivers from "./pages/admin/AdminDrivers";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminPayments from "./pages/admin/AdminPayments";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminHotels from "./pages/admin/AdminHotels";
-import DriverLayout from "./pages/driver/DriverLayout";
-import DriverDashboard from "./pages/driver/DriverDashboard";
-import DriverActiveRide from "./pages/driver/DriverActiveRide";
-import DriverShuttle from "./pages/driver/DriverShuttle";
-import DriverEarnings from "./pages/driver/DriverEarnings";
-import DriverHistory from "./pages/driver/DriverHistory";
-import DriverWallet from "./pages/driver/DriverWallet";
-import DriverProfile from "./pages/driver/DriverProfile";
-import DriverAuth from "./pages/driver/DriverAuth";
-import Forbidden from "./pages/Forbidden";
-import NotFound from "./pages/NotFound";
-import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 
+// Lazy-loaded pages
+const Shuttle = lazy(() => import("./pages/Shuttle"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Wallet = lazy(() => import("./pages/Wallet"));
+const Hotel = lazy(() => import("./pages/Hotel"));
+const HotelDetail = lazy(() => import("./pages/HotelDetail"));
 const Ride = lazy(() => import("./pages/Ride"));
+const Forbidden = lazy(() => import("./pages/Forbidden"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
+// Admin pages
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminOverview = lazy(() => import("./pages/admin/AdminOverview"));
+const AdminRides = lazy(() => import("./pages/admin/AdminRides"));
+const AdminShuttles = lazy(() => import("./pages/admin/AdminShuttles"));
+const AdminDrivers = lazy(() => import("./pages/admin/AdminDrivers"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminHotels = lazy(() => import("./pages/admin/AdminHotels"));
+
+// Driver pages
+const DriverLayout = lazy(() => import("./pages/driver/DriverLayout"));
+const DriverDashboard = lazy(() => import("./pages/driver/DriverDashboard"));
+const DriverActiveRide = lazy(() => import("./pages/driver/DriverActiveRide"));
+const DriverShuttle = lazy(() => import("./pages/driver/DriverShuttle"));
+const DriverEarnings = lazy(() => import("./pages/driver/DriverEarnings"));
+const DriverWallet = lazy(() => import("./pages/driver/DriverWallet"));
+const DriverHistory = lazy(() => import("./pages/driver/DriverHistory"));
+const DriverProfile = lazy(() => import("./pages/driver/DriverProfile"));
+const DriverAuth = lazy(() => import("./pages/driver/DriverAuth"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2,
+      gcTime: 1000 * 60 * 5,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function RouteFallback() {
-  return <div className="min-h-screen bg-background" />;
+  return <PageSkeleton />;
 }
 
 const App = () => (
@@ -49,55 +64,50 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Index />} />
-            <Route
-              path="/ride"
-              element={
-                <Suspense fallback={<RouteFallback />}>
-                  <Ride />
-                </Suspense>
-              }
-            />
-            <Route path="/shuttle" element={<Shuttle />} />
-            <Route path="/hotel" element={<Hotel />} />
-            <Route path="/hotel/:id" element={<HotelDetail />} />
-            <Route path="/wallet" element={<Wallet />} />
-            <Route path="/profile" element={<Profile />} />
-          </Route>
-
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/driver/auth" element={<DriverAuth />} />
-          <Route path="/forbidden" element={<Forbidden />} />
-
-          <Route element={<ProtectedRoute requiredRole="moderator" />}>
-            <Route path="/driver" element={<DriverLayout />}>
-              <Route index element={<DriverDashboard />} />
-              <Route path="ride" element={<DriverActiveRide />} />
-              <Route path="shuttle" element={<DriverShuttle />} />
-              <Route path="earnings" element={<DriverEarnings />} />
-              <Route path="wallet" element={<DriverWallet />} />
-              <Route path="history" element={<DriverHistory />} />
-              <Route path="profile" element={<DriverProfile />} />
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/ride" element={<Ride />} />
+              <Route path="/shuttle" element={<Shuttle />} />
+              <Route path="/hotel" element={<Hotel />} />
+              <Route path="/hotel/:id" element={<HotelDetail />} />
+              <Route path="/wallet" element={<Wallet />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
-          </Route>
 
-          <Route path="admin" element={<ProtectedRoute requiredRole="admin" />}>
-            <Route element={<AdminLayout />}>
-              <Route index element={<AdminOverview />} />
-              <Route path="rides" element={<AdminRides />} />
-              <Route path="shuttles" element={<AdminShuttles />} />
-              <Route path="hotels" element={<AdminHotels />} />
-              <Route path="drivers" element={<AdminDrivers />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="payments" element={<AdminPayments />} />
-              <Route path="settings" element={<AdminSettings />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/driver/auth" element={<DriverAuth />} />
+            <Route path="/forbidden" element={<Forbidden />} />
+
+            <Route element={<ProtectedRoute requiredRole="moderator" />}>
+              <Route path="/driver" element={<DriverLayout />}>
+                <Route index element={<DriverDashboard />} />
+                <Route path="ride" element={<DriverActiveRide />} />
+                <Route path="shuttle" element={<DriverShuttle />} />
+                <Route path="earnings" element={<DriverEarnings />} />
+                <Route path="wallet" element={<DriverWallet />} />
+                <Route path="history" element={<DriverHistory />} />
+                <Route path="profile" element={<DriverProfile />} />
+              </Route>
             </Route>
-          </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            <Route path="admin" element={<ProtectedRoute requiredRole="admin" />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<AdminOverview />} />
+                <Route path="rides" element={<AdminRides />} />
+                <Route path="shuttles" element={<AdminShuttles />} />
+                <Route path="hotels" element={<AdminHotels />} />
+                <Route path="drivers" element={<AdminDrivers />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="payments" element={<AdminPayments />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
+            </Route>
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

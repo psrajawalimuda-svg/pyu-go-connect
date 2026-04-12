@@ -1,9 +1,10 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, Shield, ChevronRight, Car, Bus, Truck } from "lucide-react";
+import { User, LogOut, Shield, ChevronRight, Car, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ProfilePageSkeleton } from "@/components/ui/page-skeleton";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
@@ -15,13 +16,12 @@ export default function Profile() {
       await signOut();
       queryClient.clear();
       window.location.replace(window.location.origin);
-    } catch (error) {
-      console.error("Sign out error:", error);
+    } catch {
       window.location.replace(window.location.origin);
     }
   };
 
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -90,6 +90,8 @@ export default function Profile() {
     );
   }
 
+  if (profileLoading) return <ProfilePageSkeleton />;
+
   return (
     <div className="min-h-screen pb-20">
       <div className="gradient-primary px-6 pt-12 pb-8 rounded-b-3xl">
@@ -118,9 +120,6 @@ export default function Profile() {
       </div>
 
       <div className="px-6 space-y-2">
-        <button onClick={() => alert("Test button")} style={{ padding: '10px', margin: '10px' }}>
-          Test Button
-        </button>
         <ProfileItem label="My Rides" icon={<ChevronRight className="w-4 h-4" />} onClick={() => {}} />
         <ProfileItem label="My Shuttle Bookings" icon={<ChevronRight className="w-4 h-4" />} onClick={() => {}} />
         {isDriver && (
@@ -133,10 +132,7 @@ export default function Profile() {
         <Button 
           variant="outline" 
           className="w-full mt-8 text-destructive border-destructive/30" 
-          onClick={() => { 
-            console.log("onClick called, handleSignOut=", typeof handleSignOut);
-            handleSignOut(); 
-          }}
+          onClick={handleSignOut}
         >
           <LogOut className="w-4 h-4 mr-2" /> Sign Out
         </Button>

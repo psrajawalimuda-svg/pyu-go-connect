@@ -12,6 +12,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
+import { MapCardSkeleton } from "@/components/ui/page-skeleton";
 
 L.Icon.Default.mergeOptions({ iconUrl, shadowUrl });
 
@@ -32,7 +33,6 @@ export default function DriverActiveRide() {
   const { data: ride, isLoading } = useQuery({
     queryKey: ["active-ride", currentRideId],
     queryFn: async () => {
-      // If no currentRideId, find active ride for this driver
       const id = currentRideId;
       if (!id && driverId) {
         const { data } = await supabase
@@ -58,7 +58,6 @@ export default function DriverActiveRide() {
     refetchInterval: 5000,
   });
 
-  // Rider profile
   const { data: riderProfile } = useQuery({
     queryKey: ["rider-profile", ride?.rider_id],
     queryFn: async () => {
@@ -71,10 +70,7 @@ export default function DriverActiveRide() {
   const updateStatusMutation = useMutation({
     mutationFn: async (newStatus: string) => {
       if (newStatus === "completed") {
-        // Call complete-ride edge function
-        const { data, error } = await supabase.functions.invoke("complete-ride", {
-          body: { ride_id: ride!.id },
-        });
+        const { data, error } = await supabase.functions.invoke("complete-ride", { body: { ride_id: ride!.id } });
         if (error) throw error;
         return data;
       }
@@ -94,9 +90,7 @@ export default function DriverActiveRide() {
     onError: (err: any) => toast.error(err.message),
   });
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">Memuat...</div>;
-  }
+  if (isLoading) return <MapCardSkeleton />;
 
   if (!ride) {
     return (
@@ -115,25 +109,15 @@ export default function DriverActiveRide() {
 
   return (
     <div className="space-y-4">
-      {/* Map */}
       <div className="h-56">
-        <MapContainer
-          center={[ride.pickup_lat, ride.pickup_lng]}
-          zoom={13}
-          className="h-full w-full"
-          zoomControl={false}
-        >
+        <MapContainer center={[ride.pickup_lat, ride.pickup_lng]} zoom={13} className="h-full w-full" zoomControl={false}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <Marker position={[ride.pickup_lat, ride.pickup_lng]} icon={greenIcon} />
           <Marker position={[ride.dropoff_lat, ride.dropoff_lng]} icon={redIcon} />
-          <Polyline
-            positions={[[ride.pickup_lat, ride.pickup_lng], [ride.dropoff_lat, ride.dropoff_lng]]}
-            pathOptions={{ color: "#10b981", weight: 3, dashArray: "8" }}
-          />
+          <Polyline positions={[[ride.pickup_lat, ride.pickup_lng], [ride.dropoff_lat, ride.dropoff_lng]]} pathOptions={{ color: "#10b981", weight: 3, dashArray: "8" }} />
         </MapContainer>
       </div>
 
-      {/* Ride info */}
       <div className="px-4 space-y-3">
         <Card>
           <CardContent className="p-4 space-y-3">
@@ -141,7 +125,6 @@ export default function DriverActiveRide() {
               <span className="text-sm font-medium text-emerald-600">{statusLabel[ride.status] ?? ride.status}</span>
               <span className="text-lg font-bold">Rp {new Intl.NumberFormat("id-ID").format(Number(ride.fare ?? 0))}</span>
             </div>
-
             <div className="space-y-2 text-sm">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
@@ -152,36 +135,23 @@ export default function DriverActiveRide() {
                 <span>{ride.dropoff_address || "Lokasi tujuan"}</span>
               </div>
             </div>
-
             {riderProfile && (
               <div className="flex items-center justify-between pt-2 border-t">
                 <span className="text-sm font-medium">{riderProfile.full_name || "Penumpang"}</span>
                 {riderProfile.phone && (
-                  <a href={`tel:${riderProfile.phone}`} className="text-emerald-600">
-                    <Phone className="w-5 h-5" />
-                  </a>
+                  <a href={`tel:${riderProfile.phone}`} className="text-emerald-600"><Phone className="w-5 h-5" /></a>
                 )}
               </div>
             )}
           </CardContent>
         </Card>
-
-        {/* Action buttons */}
         {ride.status === "accepted" && (
-          <Button
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-            onClick={() => updateStatusMutation.mutate("in_progress")}
-            disabled={updateStatusMutation.isPending}
-          >
+          <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => updateStatusMutation.mutate("in_progress")} disabled={updateStatusMutation.isPending}>
             Mulai Perjalanan
           </Button>
         )}
         {ride.status === "in_progress" && (
-          <Button
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-            onClick={() => updateStatusMutation.mutate("completed")}
-            disabled={updateStatusMutation.isPending}
-          >
+          <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => updateStatusMutation.mutate("completed")} disabled={updateStatusMutation.isPending}>
             Selesaikan Ride
           </Button>
         )}
