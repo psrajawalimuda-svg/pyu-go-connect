@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -7,7 +8,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Ride from "./pages/Ride";
 import Shuttle from "./pages/Shuttle";
 import Profile from "./pages/Profile";
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -18,7 +18,13 @@ import AdminDrivers from "./pages/admin/AdminDrivers";
 import AdminUsers from "./pages/admin/AdminUsers";
 import NotFound from "./pages/NotFound";
 
+const Ride = lazy(() => import("./pages/Ride"));
+
 const queryClient = new QueryClient();
+
+function RouteFallback() {
+  return <div className="min-h-screen bg-background" />;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -27,18 +33,22 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Main app with bottom nav */}
           <Route element={<AppLayout />}>
             <Route path="/" element={<Index />} />
-            <Route path="/ride" element={<Ride />} />
+            <Route
+              path="/ride"
+              element={
+                <Suspense fallback={<RouteFallback />}>
+                  <Ride />
+                </Suspense>
+              }
+            />
             <Route path="/shuttle" element={<Shuttle />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
 
-          {/* Auth (no bottom nav) */}
           <Route path="/auth" element={<Auth />} />
 
-          {/* Admin dashboard */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminOverview />} />
             <Route path="rides" element={<AdminRides />} />
