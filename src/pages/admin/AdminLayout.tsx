@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Car, Bus, Users, UserCog, CreditCard, Building2, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Car, Bus, Users, UserCog, CreditCard, Building2, Settings, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const adminNav = [
@@ -10,6 +10,7 @@ const adminNav = [
   { to: "/admin/drivers", icon: UserCog, label: "Drivers" },
   { to: "/admin/users", icon: Users, label: "Users" },
   { to: "/admin/payments", icon: CreditCard, label: "Payments" },
+  { to: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 
 export default function AdminLayout() {

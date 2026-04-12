@@ -20,6 +20,7 @@ import AdminShuttles from "./pages/admin/AdminShuttles";
 import AdminDrivers from "./pages/admin/AdminDrivers";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPayments from "./pages/admin/AdminPayments";
+import AdminSettings from "./pages/admin/AdminSettings";
 import AdminHotels from "./pages/admin/AdminHotels";
 import NotFound from "./pages/NotFound";
 
@@ -65,6 +66,7 @@ const App = () => (
             <Route path="drivers" element={<AdminDrivers />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="payments" element={<AdminPayments />} />
+            <Route path="settings" element={<AdminSettings />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
