@@ -29,9 +29,41 @@ export function LocationSearchInput({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [open, setOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+          );
+          const data = await res.json();
+          const address = data.display_name?.split(",").slice(0, 3).join(",") ?? `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          setQuery(address);
+          onSelect(latitude, longitude, address);
+        } catch {
+          const address = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          setQuery(address);
+          onSelect(latitude, longitude, address);
+        } finally {
+          setLocating(false);
+        }
+      },
+      () => {
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   // Sync external value changes (from map tap)
   useEffect(() => {
