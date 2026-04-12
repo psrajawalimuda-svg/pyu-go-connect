@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, LocateFixed } from "lucide-react";
 
 interface NominatimResult {
   place_id: number;
@@ -15,6 +15,7 @@ interface LocationSearchInputProps {
   onSelect: (lat: number, lng: number, address: string) => void;
   onClear?: () => void;
   dotColor: string;
+  showMyLocation?: boolean;
 }
 
 export function LocationSearchInput({
@@ -23,6 +24,7 @@ export function LocationSearchInput({
   onSelect,
   onClear,
   dotColor,
+  showMyLocation = false,
 }: LocationSearchInputProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NominatimResult[]>([]);
