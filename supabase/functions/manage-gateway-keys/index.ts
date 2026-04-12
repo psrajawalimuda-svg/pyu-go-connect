@@ -53,16 +53,22 @@ Deno.serve(async (req: Request) => {
     const { action, gateway, environment, client_key, server_key } = await req.json();
 
     if (action === "update") {
-      // 1. Get old values for audit log
+      // 1. Get old values for audit log and check if we need to preserve server key
       const { data: oldConfig } = await supabaseAdmin
         .from("payment_gateway_configs")
         .select("*")
         .eq("gateway", gateway)
         .eq("environment", environment)
-        .single();
+        .maybeSingle();
 
-      // 2. Encrypt server key
-      const encryptedServerKey = encrypt(server_key);
+      // 2. Encrypt server key only if provided
+      let encryptedServerKey = oldConfig?.server_key_encrypted || "";
+      if (server_key && server_key.trim() !== "") {
+        encryptedServerKey = encrypt(server_key);
+      } else if (!oldConfig) {
+        // If this is a new config, server_key is required
+        throw new Error("Server Key is required for new configurations");
+      }
 
       // 3. Upsert config
       const { error: upsertError } = await supabaseAdmin
@@ -84,7 +90,7 @@ Deno.serve(async (req: Request) => {
         action: "update",
         changed_by: user.id,
         old_values: oldConfig || {},
-        new_values: { client_key, server_key: "********" }
+        new_values: { client_key, server_key: server_key ? "********" : "(unchanged)" }
       });
 
       return new Response(JSON.stringify({ success: true }), {
