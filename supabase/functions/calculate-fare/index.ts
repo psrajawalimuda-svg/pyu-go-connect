@@ -81,7 +81,38 @@ Deno.serve(async (req) => {
       });
     }
 
-    const fareConfig = await getFareConfig();
+    const [fareConfig, zones] = await Promise.all([getFareConfig(), getServiceZones()]);
+
+    // Validate service zone
+    if (zones.length > 0) {
+      const pickupZone = isInAnyZone(pickup_lat, pickup_lng, zones);
+      const dropoffZone = isInAnyZone(dropoff_lat, dropoff_lng, zones);
+      if (!pickupZone && !dropoffZone) {
+        return new Response(JSON.stringify({
+          error: "Lokasi pickup dan dropoff berada di luar zona layanan",
+          code: "OUTSIDE_SERVICE_ZONE",
+        }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (!pickupZone) {
+        return new Response(JSON.stringify({
+          error: "Lokasi pickup berada di luar zona layanan",
+          code: "PICKUP_OUTSIDE_ZONE",
+        }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (!dropoffZone) {
+        return new Response(JSON.stringify({
+          error: "Lokasi dropoff berada di luar zona layanan",
+          code: "DROPOFF_OUTSIDE_ZONE",
+        }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const sType = service_type && fareConfig[service_type] ? service_type : "car";
     const pricing = fareConfig[sType];
     const distance_km = haversineKm(pickup_lat, pickup_lng, dropoff_lat, dropoff_lng);
