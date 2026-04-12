@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,19 @@ export function TopUpDialog({
   );
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    // Pre-load Midtrans Snap script
+    const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
+    if (clientKey && !document.getElementById("midtrans-snap")) {
+      const script = document.createElement("script");
+      script.id = "midtrans-snap";
+      script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
+      script.setAttribute("data-client-key", clientKey);
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }, []);
+
   const handleTopUp = async () => {
     if (amount < 10000) {
       toast.error("Minimum top-up is Rp 10,000");
@@ -40,18 +53,15 @@ export function TopUpDialog({
       if (error) throw error;
 
       if (data.gateway === "midtrans" && data.token) {
-        // Load Midtrans Snap
-        // Try to get client key from response first, then from env
         const clientKey = data.client_key || import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
         
         if (!clientKey) {
-          console.error("Midtrans Client Key is missing. Please set VITE_MIDTRANS_CLIENT_KEY or ensure the server returns it.");
           toast.error("Payment initialization failed: Missing client key");
           setLoading(false);
           return;
         }
 
-        const loadSnap = () => {
+        const triggerSnap = () => {
           if ((window as any).snap) {
             (window as any).snap.pay(data.token, {
               onSuccess: () => { 
@@ -62,33 +72,25 @@ export function TopUpDialog({
               onError: () => toast.error("Payment failed"),
               onClose: () => toast.info("Payment cancelled"),
             });
-            return true;
+          } else {
+            toast.error("Payment system not ready. Please try again.");
           }
-          return false;
         };
 
         const existingScript = document.getElementById("midtrans-snap") as HTMLScriptElement;
         
-        if (existingScript) {
-          // If script exists but missing client key attribute, remove it and recreate
-          if (!existingScript.getAttribute("data-client-key")) {
-            existingScript.remove();
-            const script = document.createElement("script");
-            script.id = "midtrans-snap";
-            script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
-            script.setAttribute("data-client-key", clientKey);
-            script.onload = loadSnap;
-            document.head.appendChild(script);
-          } else if (!loadSnap()) {
-            existingScript.onload = loadSnap;
-          }
-        } else {
+        if (!existingScript || !existingScript.getAttribute("data-client-key")) {
+          // Re-load if missing or attribute is gone
+          if (existingScript) existingScript.remove();
+          
           const script = document.createElement("script");
           script.id = "midtrans-snap";
           script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
           script.setAttribute("data-client-key", clientKey);
-          script.onload = loadSnap;
+          script.onload = triggerSnap;
           document.head.appendChild(script);
+        } else {
+          triggerSnap();
         }
       } else if (data.gateway === "xendit" && data.invoice_url) {
         window.open(data.invoice_url, "_blank");
