@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Car, Bus, Users, UserCog, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Car, Bus, Users, UserCog, CreditCard, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const adminNav = [
@@ -8,6 +8,7 @@ const adminNav = [
   { to: "/admin/shuttles", icon: Bus, label: "Shuttles" },
   { to: "/admin/drivers", icon: UserCog, label: "Drivers" },
   { to: "/admin/users", icon: Users, label: "Users" },
+  { to: "/admin/payments", icon: CreditCard, label: "Payments" },
 ];
 
 export default function AdminLayout() {

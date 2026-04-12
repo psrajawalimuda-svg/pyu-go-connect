@@ -10,12 +10,14 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Shuttle from "./pages/Shuttle";
 import Profile from "./pages/Profile";
+import Wallet from "./pages/Wallet";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminRides from "./pages/admin/AdminRides";
 import AdminShuttles from "./pages/admin/AdminShuttles";
 import AdminDrivers from "./pages/admin/AdminDrivers";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminPayments from "./pages/admin/AdminPayments";
 import NotFound from "./pages/NotFound";
 
 const Ride = lazy(() => import("./pages/Ride"));
@@ -44,6 +46,7 @@ const App = () => (
               }
             />
             <Route path="/shuttle" element={<Shuttle />} />
+            <Route path="/wallet" element={<Wallet />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
 
@@ -55,6 +58,7 @@ const App = () => (
             <Route path="shuttles" element={<AdminShuttles />} />
             <Route path="drivers" element={<AdminDrivers />} />
             <Route path="users" element={<AdminUsers />} />
+            <Route path="payments" element={<AdminPayments />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

@@ -56,6 +56,39 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_settings: {
+        Row: {
+          commission_rate: number
+          config: Json
+          created_at: string
+          gateway: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          updated_at: string
+        }
+        Insert: {
+          commission_rate?: number
+          config?: Json
+          created_at?: string
+          gateway: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          updated_at?: string
+        }
+        Update: {
+          commission_rate?: number
+          config?: Json
+          created_at?: string
+          gateway?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -350,6 +383,83 @@ export type Database = {
           },
         ]
       }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          description: string | null
+          gateway_transaction_id: string | null
+          id: string
+          payment_gateway: string | null
+          reference_id: string | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          type: Database["public"]["Enums"]["transaction_type"]
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after?: number
+          created_at?: string
+          description?: string | null
+          gateway_transaction_id?: string | null
+          id?: string
+          payment_gateway?: string | null
+          reference_id?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          type: Database["public"]["Enums"]["transaction_type"]
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          description?: string | null
+          gateway_transaction_id?: string | null
+          id?: string
+          payment_gateway?: string | null
+          reference_id?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          type?: Database["public"]["Enums"]["transaction_type"]
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          wallet_type: Database["public"]["Enums"]["wallet_type"]
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          wallet_type?: Database["public"]["Enums"]["wallet_type"]
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          wallet_type?: Database["public"]["Enums"]["wallet_type"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -362,6 +472,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      process_wallet_transaction: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_gateway_transaction_id?: string
+          p_payment_gateway?: string
+          p_reference_id?: string
+          p_status?: Database["public"]["Enums"]["transaction_status"]
+          p_type: Database["public"]["Enums"]["transaction_type"]
+          p_wallet_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
@@ -373,6 +496,15 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "cancelled"
+      transaction_status: "pending" | "completed" | "failed"
+      transaction_type:
+        | "top_up"
+        | "ride_payment"
+        | "ride_earning"
+        | "withdrawal"
+        | "refund"
+        | "admin_adjustment"
+      wallet_type: "user" | "driver"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -510,6 +642,16 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
+      transaction_status: ["pending", "completed", "failed"],
+      transaction_type: [
+        "top_up",
+        "ride_payment",
+        "ride_earning",
+        "withdrawal",
+        "refund",
+        "admin_adjustment",
+      ],
+      wallet_type: ["user", "driver"],
     },
   },
 } as const

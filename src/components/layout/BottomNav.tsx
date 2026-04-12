@@ -1,4 +1,4 @@
-import { Home, Car, Bus, User } from "lucide-react";
+import { Home, Car, Bus, Wallet, User } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -6,6 +6,7 @@ const navItems = [
   { to: "/", icon: Home, label: "Home" },
   { to: "/ride", icon: Car, label: "Ride" },
   { to: "/shuttle", icon: Bus, label: "Shuttle" },
+  { to: "/wallet", icon: Wallet, label: "Wallet" },
   { to: "/profile", icon: User, label: "Profile" },
 ];
 
