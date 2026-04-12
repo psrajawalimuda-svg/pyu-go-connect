@@ -27,6 +27,7 @@ import DriverDashboard from "./pages/driver/DriverDashboard";
 import DriverActiveRide from "./pages/driver/DriverActiveRide";
 import DriverEarnings from "./pages/driver/DriverEarnings";
 import DriverHistory from "./pages/driver/DriverHistory";
+import DriverWallet from "./pages/driver/DriverWallet";
 import NotFound from "./pages/NotFound";
 
 const Ride = lazy(() => import("./pages/Ride"));
@@ -67,6 +68,7 @@ const App = () => (
             <Route index element={<DriverDashboard />} />
             <Route path="ride" element={<DriverActiveRide />} />
             <Route path="earnings" element={<DriverEarnings />} />
+            <Route path="wallet" element={<DriverWallet />} />
             <Route path="history" element={<DriverHistory />} />
           </Route>
 
