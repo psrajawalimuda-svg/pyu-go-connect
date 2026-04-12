@@ -366,6 +366,8 @@ export type Database = {
           id: string
           payment_method: string | null
           payment_status: string
+          pickup_point_id: string | null
+          rayon_id: string | null
           schedule_id: string
           seat_count: number
           status: Database["public"]["Enums"]["booking_status"]
@@ -381,6 +383,8 @@ export type Database = {
           id?: string
           payment_method?: string | null
           payment_status?: string
+          pickup_point_id?: string | null
+          rayon_id?: string | null
           schedule_id: string
           seat_count?: number
           status?: Database["public"]["Enums"]["booking_status"]
@@ -396,6 +400,8 @@ export type Database = {
           id?: string
           payment_method?: string | null
           payment_status?: string
+          pickup_point_id?: string | null
+          rayon_id?: string | null
           schedule_id?: string
           seat_count?: number
           status?: Database["public"]["Enums"]["booking_status"]
@@ -405,6 +411,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "shuttle_bookings_pickup_point_id_fkey"
+            columns: ["pickup_point_id"]
+            isOneToOne: false
+            referencedRelation: "shuttle_pickup_points"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shuttle_bookings_rayon_id_fkey"
+            columns: ["rayon_id"]
+            isOneToOne: false
+            referencedRelation: "shuttle_rayons"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "shuttle_bookings_schedule_id_fkey"
             columns: ["schedule_id"]
             isOneToOne: false
@@ -412,6 +432,80 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shuttle_pickup_points: {
+        Row: {
+          active: boolean
+          created_at: string
+          departure_time: string | null
+          distance_meters: number
+          fare: number
+          id: string
+          name: string
+          rayon_id: string
+          stop_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          departure_time?: string | null
+          distance_meters?: number
+          fare?: number
+          id?: string
+          name: string
+          rayon_id: string
+          stop_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          departure_time?: string | null
+          distance_meters?: number
+          fare?: number
+          id?: string
+          name?: string
+          rayon_id?: string
+          stop_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shuttle_pickup_points_rayon_id_fkey"
+            columns: ["rayon_id"]
+            isOneToOne: false
+            referencedRelation: "shuttle_rayons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shuttle_rayons: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       shuttle_routes: {
         Row: {
