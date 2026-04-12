@@ -145,6 +145,47 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_bank_accounts: {
+        Row: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at: string
+          driver_id: string
+          id: string
+          is_default: boolean
+          updated_at: string
+        }
+        Insert: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          is_default?: boolean
+          updated_at?: string
+        }
+        Update: {
+          account_holder?: string
+          account_number?: string
+          bank_name?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          is_default?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_bank_accounts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_earnings: {
         Row: {
           commission_amount: number
@@ -1140,6 +1181,57 @@ export type Database = {
           wallet_type?: Database["public"]["Enums"]["wallet_type"]
         }
         Relationships: []
+      }
+      withdrawal_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          bank_account_id: string
+          created_at: string
+          driver_id: string
+          id: string
+          processed_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          bank_account_id: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          processed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          bank_account_id?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          processed_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_requests_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "driver_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "withdrawal_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
