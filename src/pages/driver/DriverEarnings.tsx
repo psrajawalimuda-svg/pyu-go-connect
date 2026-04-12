@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { useDriverStore } from "@/stores/driverStore";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, TrendingUp } from "lucide-react";
+import { Wallet, ArrowDownToLine, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 export default function DriverEarnings() {
   const { driverId } = useDriverStore();
   const [period, setPeriod] = useState<"day" | "week" | "month">("day");
+  const queryClient = useQueryClient();
 
   const getStartDate = () => {
     const now = new Date();
@@ -36,6 +40,38 @@ export default function DriverEarnings() {
     enabled: !!driverId,
   });
 
+  // Pending earnings (all time, for withdraw)
+  const { data: pendingTotal } = useQuery({
+    queryKey: ["driver-pending-earnings", driverId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("driver_earnings")
+        .select("net_earning")
+        .eq("driver_id", driverId!)
+        .eq("status", "pending");
+      if (error) throw error;
+      return data?.reduce((s, e) => s + Number(e.net_earning), 0) ?? 0;
+    },
+    enabled: !!driverId,
+  });
+
+  const withdrawMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("withdraw-earnings", {
+        body: { driver_id: driverId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Berhasil withdraw Rp ${fmt(data.amount)} ke wallet`);
+      queryClient.invalidateQueries({ queryKey: ["driver-earnings"] });
+      queryClient.invalidateQueries({ queryKey: ["driver-pending-earnings"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const totalGross = earnings?.reduce((s, e) => s + Number(e.gross_fare), 0) ?? 0;
   const totalCommission = earnings?.reduce((s, e) => s + Number(e.commission_amount), 0) ?? 0;
   const totalNet = earnings?.reduce((s, e) => s + Number(e.net_earning), 0) ?? 0;
@@ -60,6 +96,35 @@ export default function DriverEarnings() {
         </CardContent>
       </Card>
 
+      {/* Withdraw section */}
+      {(pendingTotal ?? 0) > 0 && (
+        <Card className="border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Saldo Pending</p>
+              <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                Rp {fmt(pendingTotal ?? 0)}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => withdrawMutation.mutate()}
+              disabled={withdrawMutation.isPending}
+            >
+              {withdrawMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <ArrowDownToLine className="w-4 h-4 mr-1" />
+                  Withdraw
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
         <Card>
           <CardContent className="p-3 text-center">
@@ -83,7 +148,12 @@ export default function DriverEarnings() {
           <Card key={e.id}>
             <CardContent className="p-3 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">Rp {fmt(Number(e.net_earning))}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">Rp {fmt(Number(e.net_earning))}</p>
+                  <Badge variant={e.status === "paid" ? "default" : "secondary"} className="text-[9px] h-4">
+                    {e.status === "paid" ? "Dibayar" : "Pending"}
+                  </Badge>
+                </div>
                 <p className="text-[10px] text-muted-foreground">
                   Tarif Rp {fmt(Number(e.gross_fare))} • Komisi {(Number(e.commission_rate) * 100).toFixed(0)}%
                 </p>
