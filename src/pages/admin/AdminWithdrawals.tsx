@@ -14,8 +14,11 @@ import { format } from "date-fns";
 import { Loader2, CheckCircle, XCircle, Clock, AlertCircle, Search } from "lucide-react";
 import { toast } from "sonner";
 import { ListPageSkeleton } from "@/components/ui/page-skeleton";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 
 type WithdrawalStatus = "pending" | "processing" | "completed" | "failed";
+
+const ITEMS_PER_PAGE = 20;
 
 export default function AdminWithdrawals() {
   const queryClient = useQueryClient();
@@ -23,25 +26,32 @@ export default function AdminWithdrawals() {
   const [search, setSearch] = useState("");
   const [actionDialog, setActionDialog] = useState<{ open: boolean; withdrawal: any; action: "approve" | "reject" } | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: withdrawals = [], isLoading } = useQuery({
-    queryKey: ["admin-withdrawals", statusFilter],
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-withdrawals", statusFilter, currentPage],
     queryFn: async () => {
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
       let q = supabase
         .from("withdrawal_requests")
-        .select("*, drivers(full_name, phone, user_id), driver_bank_accounts(bank_name, account_number, account_holder)")
+        .select("*, drivers(full_name, phone, user_id), driver_bank_accounts(bank_name, account_number, account_holder)", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(100);
+        .range(from, to);
 
       if (statusFilter !== "all") {
         q = q.eq("status", statusFilter);
       }
 
-      const { data, error } = await q;
+      const { data, error, count } = await q;
       if (error) throw error;
-      return data ?? [];
+      return { withdrawals: data ?? [], totalCount: count || 0 };
     },
   });
+
+  const withdrawals = data?.withdrawals || [];
+  const totalPages = Math.ceil((data?.totalCount || 0) / ITEMS_PER_PAGE);
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, status, notes }: { id: string; status: string; notes: string }) => {
@@ -103,11 +113,17 @@ export default function AdminWithdrawals() {
     },
   });
 
+  // Filters
+  const handleStatusFilterChange = (val: string) => {
+    setStatusFilter(val);
+    setCurrentPage(1);
+  };
+
   if (isLoading) return <ListPageSkeleton />;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold">Withdrawal Requests</h1>
+      <h1 className="text-xl font-bold">Permintaan Penarikan Saldo</h1>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -145,7 +161,7 @@ export default function AdminWithdrawals() {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <Tabs value={statusFilter} onValueChange={setStatusFilter} className="flex-1">
+        <Tabs value={statusFilter} onValueChange={handleStatusFilterChange} className="flex-1">
           <TabsList>
             <TabsTrigger value="pending">Pending</TabsTrigger>
             <TabsTrigger value="processing">Diproses</TabsTrigger>
@@ -219,7 +235,7 @@ export default function AdminWithdrawals() {
                               className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700"
                               onClick={() => setActionDialog({ open: true, withdrawal: w, action: "approve" })}
                             >
-                              <CheckCircle className="w-3 h-3 mr-1" /> Approve
+                              <CheckCircle className="w-3 h-3 mr-1" /> Setujui
                             </Button>
                             <Button
                               size="sm"
@@ -227,7 +243,7 @@ export default function AdminWithdrawals() {
                               className="h-7 text-xs"
                               onClick={() => setActionDialog({ open: true, withdrawal: w, action: "reject" })}
                             >
-                              <XCircle className="w-3 h-3 mr-1" /> Reject
+                              <XCircle className="w-3 h-3 mr-1" /> Tolak
                             </Button>
                           </div>
                         )}
@@ -244,7 +260,7 @@ export default function AdminWithdrawals() {
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                      Tidak ada withdrawal request
+                      Tidak ada permintaan penarikan
                     </TableCell>
                   </TableRow>
                 )}
@@ -254,12 +270,20 @@ export default function AdminWithdrawals() {
         </CardContent>
       </Card>
 
+      {totalPages > 1 && (
+        <AdminPagination 
+          currentPage={currentPage} 
+          totalPages={totalPages} 
+          onPageChange={setCurrentPage} 
+        />
+      )}
+
       {/* Action Dialog */}
       <Dialog open={!!actionDialog?.open} onOpenChange={(open) => !open && setActionDialog(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {actionDialog?.action === "approve" ? "Setujui Penarikan" : "Tolak Penarikan"}
+              {actionDialog?.action === "approve" ? "Konfirmasi Persetujuan" : "Konfirmasi Penolakan"}
             </DialogTitle>
           </DialogHeader>
           {actionDialog?.withdrawal && (
@@ -271,36 +295,47 @@ export default function AdminWithdrawals() {
                 <p><span className="text-muted-foreground">Pemilik:</span> {actionDialog.withdrawal.driver_bank_accounts?.account_holder}</p>
               </div>
 
+              <p className="text-sm text-muted-foreground">
+                {actionDialog.action === "approve" 
+                  ? "Apakah Anda yakin ingin menyetujui permintaan penarikan ini?" 
+                  : "Apakah Anda yakin ingin menolak permintaan penarikan ini?"}
+              </p>
+
               <div>
-                <Label>Catatan Admin (opsional)</Label>
+                <Label>Catatan Admin (Opsional)</Label>
                 <Textarea
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder={actionDialog.action === "reject" ? "Alasan penolakan..." : "Catatan tambahan..."}
+                  placeholder={actionDialog.action === "reject" ? "Masukkan alasan penolakan..." : "Masukkan catatan atau bukti transfer..."}
                   rows={3}
                 />
               </div>
 
-              <Button
-                className={`w-full ${actionDialog.action === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : ""}`}
-                variant={actionDialog.action === "reject" ? "destructive" : "default"}
-                disabled={updateMutation.isPending}
-                onClick={() =>
-                  updateMutation.mutate({
-                    id: actionDialog.withdrawal.id,
-                    status: actionDialog.action === "approve" ? "completed" : "failed",
-                    notes: adminNotes,
-                  })
-                }
-              >
-                {updateMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : actionDialog.action === "approve" ? (
-                  "Setujui Penarikan"
-                ) : (
-                  "Tolak Penarikan"
-                )}
-              </Button>
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => setActionDialog(null)}>
+                  Batal
+                </Button>
+                <Button
+                  className={`flex-1 ${actionDialog.action === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : ""}`}
+                  variant={actionDialog.action === "reject" ? "destructive" : "default"}
+                  disabled={updateMutation.isPending}
+                  onClick={() =>
+                    updateMutation.mutate({
+                      id: actionDialog.withdrawal.id,
+                      status: actionDialog.action === "approve" ? "completed" : "failed",
+                      notes: adminNotes,
+                    })
+                  }
+                >
+                  {updateMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : actionDialog.action === "approve" ? (
+                    "Ya, Setujui"
+                  ) : (
+                    "Ya, Tolak"
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

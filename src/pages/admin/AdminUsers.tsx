@@ -20,21 +20,21 @@ export default function AdminUsers() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">User Management</h2>
+      <h2 className="text-xl font-bold mb-4">Manajemen Pengguna</h2>
       <Card>
         <CardContent className="pt-4">
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
           ) : !users?.length ? (
-            <p className="text-sm text-muted-foreground">No users yet.</p>
+            <p className="text-sm text-muted-foreground">Belum ada pengguna.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="pb-2 font-medium">Name</th>
-                    <th className="pb-2 font-medium">Phone</th>
-                    <th className="pb-2 font-medium">Joined</th>
+                    <th className="pb-2 font-medium">Nama</th>
+                    <th className="pb-2 font-medium">Telepon</th>
+                    <th className="pb-2 font-medium">Bergabung</th>
                   </tr>
                 </thead>
                 <tbody>

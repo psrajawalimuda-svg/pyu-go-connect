@@ -21,11 +21,11 @@ export default function AdminPayments() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold">Payments</h1>
+      <h1 className="text-xl font-bold">Pembayaran</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Recent Transactions</CardTitle>
+          <CardTitle className="text-base">Transaksi Terbaru</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -35,12 +35,12 @@ export default function AdminPayments() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Amount</TableHead>
+                    <TableHead>Tanggal</TableHead>
+                    <TableHead>Tipe</TableHead>
+                    <TableHead>Jumlah</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Gateway</TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead>Metode</TableHead>
+                    <TableHead>Keterangan</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -53,7 +53,7 @@ export default function AdminPayments() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={txn.status === "completed" ? "default" : txn.status === "failed" ? "destructive" : "secondary"} className="text-[10px]">
-                          {txn.status}
+                          {txn.status === "completed" ? "Selesai" : txn.status === "failed" ? "Gagal" : "Diproses"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs capitalize">{txn.payment_gateway || "—"}</TableCell>
@@ -62,7 +62,7 @@ export default function AdminPayments() {
                   ))}
                   {!transactions.length && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">No transactions</TableCell>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Tidak ada transaksi</TableCell>
                     </TableRow>
                   )}
                 </TableBody>

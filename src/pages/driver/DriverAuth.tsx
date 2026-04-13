@@ -25,7 +25,7 @@ export default function DriverAuth() {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) throw error;
-        toast.success("Welcome back, Captain!");
+        toast.success("Selamat datang kembali, Kapten!");
         navigate("/driver");
       } else {
         const { error } = await signUp(email, password, fullName, {
@@ -34,7 +34,7 @@ export default function DriverAuth() {
           isDriver: true,
         });
         if (error) throw error;
-        toast.success("Registration successful! Check your email to confirm.");
+        toast.success("Pendaftaran berhasil! Silakan cek email Anda untuk konfirmasi.");
         setIsLogin(true);
       }
     } catch (err: any) {

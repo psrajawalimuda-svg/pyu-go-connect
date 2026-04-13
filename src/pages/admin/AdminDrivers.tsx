@@ -14,6 +14,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 
 const statusStyle: Record<string, string> = {
   available: "text-green-600 border-green-300",
@@ -27,23 +28,40 @@ const registrationStatusStyle: Record<string, string> = {
   rejected: "bg-red-100 text-red-700",
 };
 
+const registrationStatusLabel: Record<string, string> = {
+  pending: "Menunggu",
+  approved: "Disetujui",
+  rejected: "Ditolak",
+};
+
+const ITEMS_PER_PAGE = 12;
+
 export default function AdminDrivers() {
   const queryClient = useQueryClient();
   const [selectedDriver, setSelectedDriver] = useState<any>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: drivers, isLoading } = useQuery({
-    queryKey: ["admin-drivers"],
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-drivers", currentPage],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      const { data, error, count } = await supabase
         .from("drivers")
-        .select("id, full_name, phone, avatar_url, status, is_verified, rating, created_at, registration_status, ktp_url, sim_url, rejection_reason, gender, vehicles(plate_number, model, vehicle_type)")
-        .order("created_at", { ascending: false });
+        .select("id, full_name, phone, avatar_url, status, is_verified, rating, created_at, registration_status, ktp_url, sim_url, rejection_reason, gender, vehicles(plate_number, model, vehicle_type)", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(from, to);
+        
       if (error) throw error;
-      return data;
+      return { drivers: data, totalCount: count || 0 };
     },
   });
+
+  const drivers = data?.drivers || [];
+  const totalPages = Math.ceil((data?.totalCount || 0) / ITEMS_PER_PAGE);
 
   const verifyMutation = useMutation({
     mutationFn: async ({ id, status, reason }: { id: string; status: 'approved' | 'rejected'; reason?: string }) => {
@@ -103,8 +121,8 @@ export default function AdminDrivers() {
                       <p className="text-[10px] text-muted-foreground">{d.phone}</p>
                     </div>
                   </div>
-                  <Badge variant="outline" className={`${registrationStatusStyle[d.registration_status || 'pending']} border-none capitalize`}>
-                    {d.registration_status || 'pending'}
+                  <Badge variant="outline" className={`${registrationStatusStyle[d.registration_status || 'pending']} border-none`}>
+                    {registrationStatusLabel[d.registration_status || 'pending']}
                   </Badge>
                 </div>
 
@@ -133,6 +151,14 @@ export default function AdminDrivers() {
             </Card>
           ))}
         </div>
+      )}
+
+      {totalPages > 1 && (
+        <AdminPagination 
+          currentPage={currentPage} 
+          totalPages={totalPages} 
+          onPageChange={setCurrentPage} 
+        />
       )}
 
       {/* Driver Detail & Verification Dialog */}

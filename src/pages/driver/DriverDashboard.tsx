@@ -129,11 +129,11 @@ export default function DriverDashboard() {
                 <p className="font-bold text-lg">{driver.full_name}</p>
                 {driver.is_verified ? (
                   <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 flex gap-1 px-1.5 py-0">
-                    <ShieldCheck className="w-3 h-3" /> <span className="text-[10px]">Verified</span>
+                    <ShieldCheck className="w-3 h-3" /> <span className="text-[10px]">Terverifikasi</span>
                   </Badge>
                 ) : (
                   <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100 flex gap-1 px-1.5 py-0">
-                    <ShieldAlert className="w-3 h-3" /> <span className="text-[10px]">Pending</span>
+                    <ShieldAlert className="w-3 h-3" /> <span className="text-[10px]">Menunggu</span>
                   </Badge>
                 )}
               </div>

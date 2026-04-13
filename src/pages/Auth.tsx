@@ -23,7 +23,7 @@ export default function Auth() {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) throw error;
-        toast.success("Welcome back!");
+        toast.success("Selamat datang kembali!");
         
         // Cek role setelah login untuk redirect
         const { data: roleData } = await supabase
@@ -40,7 +40,7 @@ export default function Auth() {
       } else {
         const { error } = await signUp(email, password, fullName);
         if (error) throw error;
-        toast.success("Check your email to confirm your account!");
+        toast.success("Silakan cek email Anda untuk konfirmasi akun!");
       }
     } catch (err: any) {
       toast.error(err.message);
@@ -57,20 +57,20 @@ export default function Auth() {
           <h1 className="text-3xl font-extrabold text-primary-foreground">PYU GO</h1>
         </div>
         <p className="text-primary-foreground/80 text-sm">
-          {isLogin ? "Sign in to your account" : "Create a new account"}
+          {isLogin ? "Masuk ke akun Anda" : "Buat akun baru"}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex-1 px-6 pt-8 space-y-5">
         {!isLogin && (
           <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" required />
+            <Label htmlFor="fullName">Nama Lengkap</Label>
+            <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Nama Anda" required />
           </div>
         )}
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" required />
+          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="kamu@email.com" required />
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
@@ -78,13 +78,13 @@ export default function Auth() {
         </div>
 
         <Button type="submit" className="w-full gradient-primary text-primary-foreground font-semibold" size="lg" disabled={loading}>
-          {loading ? "Please wait..." : isLogin ? "Sign In" : "Sign Up"}
+          {loading ? "Mohon tunggu..." : isLogin ? "Masuk" : "Daftar"}
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
-          {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+          {isLogin ? "Belum punya akun?" : "Sudah punya akun?"}{" "}
           <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-primary font-semibold">
-            {isLogin ? "Sign Up" : "Sign In"}
+            {isLogin ? "Daftar" : "Masuk"}
           </button>
         </p>
 

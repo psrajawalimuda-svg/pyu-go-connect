@@ -37,15 +37,15 @@ export default function AdminOverview() {
   });
 
   const cards = [
-    { label: "Active Rides", value: stats?.activeRides ?? "—", icon: Car, color: "text-primary" },
-    { label: "Shuttle Bookings", value: stats?.shuttleBookings ?? "—", icon: Bus, color: "text-secondary" },
-    { label: "Users", value: stats?.users ?? "—", icon: Users, color: "text-accent-foreground" },
-    { label: "Revenue", value: stats ? `Rp ${stats.revenue.toLocaleString("id-ID")}` : "—", icon: DollarSign, color: "text-primary" },
+    { label: "Perjalanan Aktif", value: stats?.activeRides ?? "—", icon: Car, color: "text-primary" },
+    { label: "Pemesanan Shuttle", value: stats?.shuttleBookings ?? "—", icon: Bus, color: "text-secondary" },
+    { label: "Pengguna", value: stats?.users ?? "—", icon: Users, color: "text-accent-foreground" },
+    { label: "Pendapatan", value: stats ? `Rp ${stats.revenue.toLocaleString("id-ID")}` : "—", icon: DollarSign, color: "text-primary" },
   ];
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">Dashboard Overview</h2>
+      <h2 className="text-xl font-bold mb-4">Ringkasan Dashboard</h2>
       {isLoading ? (
         <div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
       ) : (
@@ -66,20 +66,20 @@ export default function AdminOverview() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Recent Rides</CardTitle>
+          <CardTitle className="text-sm">Perjalanan Terbaru</CardTitle>
         </CardHeader>
         <CardContent>
           {ridesLoading ? (
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
           ) : !recentRides?.length ? (
-            <p className="text-sm text-muted-foreground">No rides yet.</p>
+            <p className="text-sm text-muted-foreground">Belum ada perjalanan.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="pb-2 font-medium">Route</th>
-                    <th className="pb-2 font-medium">Fare</th>
+                    <th className="pb-2 font-medium">Rute</th>
+                    <th className="pb-2 font-medium">Tarif</th>
                     <th className="pb-2 font-medium">Status</th>
                   </tr>
                 </thead>

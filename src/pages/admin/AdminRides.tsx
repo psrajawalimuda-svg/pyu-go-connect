@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { AdminPagination } from "@/components/admin/AdminPagination";
 
 const statusColor: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -25,24 +26,41 @@ const statusColor: Record<string, string> = {
   cancelled: "bg-red-100 text-red-800",
 };
 
+const statusLabel: Record<string, string> = {
+  pending: "Menunggu",
+  accepted: "Diterima",
+  in_progress: "Sedang Berjalan",
+  completed: "Selesai",
+  cancelled: "Dibatalkan",
+};
+
+const ITEMS_PER_PAGE = 20;
+
 export default function AdminRides() {
   const queryClient = useQueryClient();
   const [selectedRide, setSelectedRide] = useState<any>(null);
   const [driverName, setDriverName] = useState("");
   const [plateNumber, setPlateNumber] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: rides, isLoading } = useQuery({
-    queryKey: ["admin-rides"],
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-rides", currentPage],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      const { data, error, count } = await supabase
         .from("rides")
-        .select("*, drivers(full_name, phone)")
+        .select("*, drivers(full_name, phone)", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(50);
+        .range(from, to);
       if (error) throw error;
-      return data;
+      return { rides: data, totalCount: count || 0 };
     },
   });
+
+  const rides = data?.rides || [];
+  const totalPages = Math.ceil((data?.totalCount || 0) / ITEMS_PER_PAGE);
 
   const assignDriverMutation = useMutation({
     mutationFn: async ({ rideId, name, plate }: { rideId: string; name: string; plate: string }) => {
@@ -92,28 +110,28 @@ export default function AdminRides() {
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-4">Ride Management</h2>
+      <h2 className="text-xl font-bold mb-4">Manajemen Perjalanan</h2>
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">All Rides</CardTitle>
+          <CardTitle className="text-sm">Semua Perjalanan</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
           ) : !rides?.length ? (
-            <p className="text-sm text-muted-foreground">No rides found.</p>
+            <p className="text-sm text-muted-foreground">Tidak ada perjalanan ditemukan.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-muted-foreground">
-                     <th className="pb-2 font-medium">Date</th>
-                     <th className="pb-2 font-medium">Service</th>
-                     <th className="pb-2 font-medium">Route</th>
+                     <th className="pb-2 font-medium">Tanggal</th>
+                     <th className="pb-2 font-medium">Layanan</th>
+                     <th className="pb-2 font-medium">Rute</th>
                      <th className="pb-2 font-medium">Driver</th>
-                     <th className="pb-2 font-medium">Fare</th>
+                     <th className="pb-2 font-medium">Tarif</th>
                      <th className="pb-2 font-medium">Status</th>
-                     <th className="pb-2 font-medium">Action</th>
+                     <th className="pb-2 font-medium">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -134,12 +152,12 @@ export default function AdminRides() {
                              <span className="text-[10px] text-muted-foreground">{(r as any).external_driver_plate}</span>
                            </div>
                          ) : (
-                           <span className="text-muted-foreground italic">Unassigned</span>
+                           <span className="text-muted-foreground italic">Belum Ditugaskan</span>
                          )}
                        </td>
                       <td className="py-3 font-semibold">Rp {(r.fare ?? 0).toLocaleString("id-ID")}</td>
                       <td className="py-3">
-                        <Badge variant="outline" className={statusColor[r.status] ?? ""}>{r.status.replace("_", " ")}</Badge>
+                        <Badge variant="outline" className={statusColor[r.status] ?? ""}>{statusLabel[r.status] || r.status}</Badge>
                       </td>
                       <td className="py-3">
                         {r.status === "pending" && (
@@ -156,6 +174,14 @@ export default function AdminRides() {
           )}
         </CardContent>
       </Card>
+
+      {totalPages > 1 && (
+        <AdminPagination 
+          currentPage={currentPage} 
+          totalPages={totalPages} 
+          onPageChange={setCurrentPage} 
+        />
+      )}
 
       <Dialog open={!!selectedRide} onOpenChange={(open) => !open && setSelectedRide(null)}>
         <DialogContent>
