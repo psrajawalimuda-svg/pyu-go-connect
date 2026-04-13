@@ -216,14 +216,14 @@ export default function RayonsTab() {
                     {r.description && <p className="text-xs text-muted-foreground">{r.description}</p>}
                   </div>
                   <div className="flex items-center gap-1">
-                    <Badge variant="secondary" className="text-xs">{r.pickup_points.length} titik</Badge>
+                    <Badge variant="secondary" className="text-xs">{(r.pickup_points || []).length} titik</Badge>
                     {expandedId === r.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </div>
                 </div>
               </CardHeader>
               {expandedId === r.id && (
                 <CardContent className="space-y-2">
-                  {r.pickup_points.length === 0 ? (
+                  {(r.pickup_points || []).length === 0 ? (
                     <p className="text-xs text-muted-foreground">Tidak ada titik jemput</p>
                   ) : (
                     <div className="overflow-x-auto">

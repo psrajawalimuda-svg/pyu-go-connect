@@ -25,7 +25,7 @@ export default function BookingsTab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shuttle_bookings")
-        .select("*, shuttle_schedules(departure_time, shuttle_routes(name, origin, destination)), shuttle_pickup_points(name, rayon:shuttle_rayons(name))")
+        .select("*, shuttle_schedules(departure_time, shuttle_routes(name, origin, destination)), shuttle_pickup_points(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -98,7 +98,7 @@ export default function BookingsTab() {
                     <p className="text-xs text-muted-foreground">{route?.name ?? "-"}</p>
                     {b.shuttle_pickup_points ? (
                       <p className="text-xs text-muted-foreground">
-                        📍 {b.shuttle_pickup_points.name} ({b.shuttle_pickup_points.rayon?.name})
+                        📍 {b.shuttle_pickup_points.name}
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground italic">Base Route</p>
