@@ -583,6 +583,17 @@ export default function Shuttle() {
               />
             )}
 
+            {step === "dropoff" && (
+              <DropoffSelector
+                rayons={rayons}
+                selectedRoute={selectedRoute}
+                selectedScheduleDeparture={selectedScheduleDeparture}
+                onSelectDropoffPoint={handleSelectDropoffPoint}
+                onSkip={handleSkipDropoff}
+                onBack={goBack}
+              />
+            )}
+
             {step === "seats" && (
               <SeatSelector 
                 selectedRoute={selectedRoute}
