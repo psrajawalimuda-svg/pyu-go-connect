@@ -63,6 +63,8 @@ function RouteLine({ pickup, dropoff, onRouteInfo }: {
 
   useEffect(() => {
     let cancelled = false;
+    let timeoutId: NodeJS.Timeout;
+
     const fetchRoute = async () => {
       try {
         const res = await fetch(
@@ -84,8 +86,14 @@ function RouteLine({ pickup, dropoff, onRouteInfo }: {
         setRouteCoords([[pickup.lat, pickup.lng], [dropoff.lat, dropoff.lng]]);
       }
     };
-    fetchRoute();
-    return () => { cancelled = true; };
+
+    // Debounce route fetching by 500ms to reduce API calls
+    timeoutId = setTimeout(fetchRoute, 500);
+    
+    return () => { 
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, [pickup.lat, pickup.lng, dropoff.lat, dropoff.lng, onRouteInfo]);
 
   if (routeCoords.length === 0) return null;

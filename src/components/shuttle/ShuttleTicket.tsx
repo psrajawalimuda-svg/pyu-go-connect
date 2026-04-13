@@ -1,8 +1,7 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
-import html2canvas from "html2canvas";
+import { Download, Loader2 } from "lucide-react";
 
 interface ShuttleTicketProps {
   bookingRef: string;
@@ -32,14 +31,22 @@ export default function ShuttleTicket({
   pickupPointName,
 }: ShuttleTicketProps) {
   const ticketRef = useRef<HTMLDivElement>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownload = async () => {
     if (!ticketRef.current) return;
-    const canvas = await html2canvas(ticketRef.current, { scale: 2, backgroundColor: "#ffffff" });
-    const link = document.createElement("a");
-    link.download = `PYU-GO-Ticket-${bookingRef}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+    setIsDownloading(true);
+    try {
+      // Lazy load html2canvas only when needed
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(ticketRef.current, { scale: 2, backgroundColor: "#ffffff" });
+      const link = document.createElement("a");
+      link.download = `PYU-GO-Ticket-${bookingRef}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -94,9 +101,13 @@ export default function ShuttleTicket({
         </div>
       </div>
 
-      <Button onClick={handleDownload} className="w-full gradient-primary text-primary-foreground font-bold">
-        <Download className="w-4 h-4 mr-2" />
-        Download Ticket
+      <Button onClick={handleDownload} disabled={isDownloading} className="w-full gradient-primary text-primary-foreground font-bold">
+        {isDownloading ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <Download className="w-4 h-4 mr-2" />
+        )}
+        {isDownloading ? "Downloading..." : "Download Ticket"}
       </Button>
     </div>
   );

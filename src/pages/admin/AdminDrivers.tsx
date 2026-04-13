@@ -38,7 +38,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense, memo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -49,7 +49,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DriverEarningsAnalytics } from "@/components/admin/DriverEarningsAnalytics";
+// Lazy load analytics to reduce initial bundle
+const DriverEarningsAnalytics = lazy(() => 
+  import("@/components/admin/DriverEarningsAnalytics").then(m => ({ default: m.DriverEarningsAnalytics }))
+);
 import { DriverActivityLog } from "@/components/admin/DriverActivityLog";
 import { DriverVehicleManagement } from "@/components/admin/DriverVehicleManagement";
 
@@ -81,6 +84,84 @@ const registrationStatusLabel: Record<string, string> = {
 
 const ITEMS_PER_PAGE = 20;
 
+// Memoized driver table row component to prevent re-renders
+const DriverTableRow = memo(({ 
+  driver, 
+  statusStyle, 
+  statusLabelMap, 
+  registrationStatusStyle, 
+  registrationStatusLabel,
+  onViewDetails 
+}: {
+  driver: any;
+  statusStyle: Record<string, string>;
+  statusLabelMap: Record<string, string>;
+  registrationStatusStyle: Record<string, string>;
+  registrationStatusLabel: Record<string, string>;
+  onViewDetails: (driver: any) => void;
+}) => (
+  <TableRow className="hover:bg-muted/50">
+    <TableCell>
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-slate-100 overflow-hidden border border-slate-200 flex-shrink-0">
+          {driver.avatar_url ? (
+            <img
+              src={driver.avatar_url}
+              alt={driver.full_name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-xs font-bold text-slate-400">
+              {driver.full_name[0]}
+            </div>
+          )}
+        </div>
+        <div>
+          <p className="font-medium text-sm">{driver.full_name}</p>
+          <p className="text-xs text-muted-foreground">{driver.license_number || "SIM-"}</p>
+        </div>
+      </div>
+    </TableCell>
+    <TableCell>
+      <div className="text-sm">
+        <p>{driver.phone}</p>
+        <p className="text-xs text-muted-foreground">{driver.email || "-"}</p>
+      </div>
+    </TableCell>
+    <TableCell>
+      <Badge variant="outline" className={`${statusStyle[driver.status] || ""}`}>
+        {statusLabelMap[driver.status] || driver.status}
+      </Badge>
+    </TableCell>
+    <TableCell>
+      <Badge className={`${registrationStatusStyle[driver.registration_status || "pending"]}`}>
+        {registrationStatusLabel[driver.registration_status || "pending"]}
+      </Badge>
+    </TableCell>
+    <TableCell>
+      <div className="flex items-center gap-1">
+        <span className="font-bold">⭐ {Number(driver.rating || 0).toFixed(1)}</span>
+      </div>
+    </TableCell>
+    <TableCell>
+      <span className="text-sm text-muted-foreground">
+        {driver.vehicles?.length || 0} unit
+      </span>
+    </TableCell>
+    <TableCell>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => onViewDetails(driver)}
+      >
+        <Eye className="w-4 h-4" />
+      </Button>
+    </TableCell>
+  </TableRow>
+));
+
+DriverTableRow.displayName = "DriverTableRow";
+
 export default function AdminDrivers() {
   const queryClient = useQueryClient();
   const [selectedDriver, setSelectedDriver] = useState<any>(null);
@@ -100,13 +181,14 @@ export default function AdminDrivers() {
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
+      // PERFORMANCE FIX: Remove vehicles(count) and rides(count) to eliminate N+1 queries
+      // These aggregations will be fetched separately only when needed
       let query = supabase
         .from("drivers")
         .select(
           `id, full_name, phone, avatar_url, status, is_verified, rating, created_at, 
          registration_status, ktp_url, sim_url, vehicle_stnk_url, rejection_reason, 
-         gender, email, license_number, vehicles(count), 
-         rides(count)`,
+         gender, email, license_number`,
           { count: "exact" }
         );
 
@@ -379,67 +461,18 @@ export default function AdminDrivers() {
                 </TableHeader>
                 <TableBody>
                   {filteredDrivers.map((driver: any) => (
-                    <TableRow key={driver.id} className="hover:bg-muted/50">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-slate-100 overflow-hidden border border-slate-200 flex-shrink-0">
-                            {driver.avatar_url ? (
-                              <img
-                                src={driver.avatar_url}
-                                alt={driver.full_name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-xs font-bold text-slate-400">
-                                {driver.full_name[0]}
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">{driver.full_name}</p>
-                            <p className="text-xs text-muted-foreground">{driver.license_number || "SIM-"}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <p>{driver.phone}</p>
-                          <p className="text-xs text-muted-foreground">{driver.email || "-"}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={`${statusStyle[driver.status] || ""}`}>
-                          {statusLabelMap[driver.status] || driver.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`${registrationStatusStyle[driver.registration_status || "pending"]}`}>
-                          {registrationStatusLabel[driver.registration_status || "pending"]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <span className="font-bold">⭐ {Number(driver.rating || 0).toFixed(1)}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {driver.vehicles?.length || 0} unit
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setSelectedDriver(driver);
-                            setDetailTab("overview");
-                          }}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                    <DriverTableRow
+                      key={driver.id}
+                      driver={driver}
+                      statusStyle={statusStyle}
+                      statusLabelMap={statusLabelMap}
+                      registrationStatusStyle={registrationStatusStyle}
+                      registrationStatusLabel={registrationStatusLabel}
+                      onViewDetails={(d) => {
+                        setSelectedDriver(d);
+                        setDetailTab("overview");
+                      }}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -593,7 +626,9 @@ export default function AdminDrivers() {
 
               {/* Earnings Tab */}
               <TabsContent value="earnings" className="py-4">
-                <DriverEarningsAnalytics driverId={selectedDriver.id} />
+                <Suspense fallback={<div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>}>
+                  <DriverEarningsAnalytics driverId={selectedDriver.id} />
+                </Suspense>
               </TabsContent>
 
               {/* Activity Tab */}
