@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function Auth() {
@@ -24,19 +23,8 @@ export default function Auth() {
         const { error } = await signIn(email, password);
         if (error) throw error;
         toast.success("Selamat datang kembali!");
-        
-        // Cek role setelah login untuk redirect
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
-          .maybeSingle();
-
-        if (roleData?.role === "admin") {
-          navigate("/admin");
-        } else {
-          navigate("/");
-        }
+        // ✅ useAuth hook automatically handles role fetching and app routing
+        // ✅ No need for manual redirect - let the auth state update trigger navigation
       } else {
         const { error } = await signUp(email, password, fullName);
         if (error) throw error;

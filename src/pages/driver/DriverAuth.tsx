@@ -15,11 +15,63 @@ export default function DriverAuth() {
   const [phone, setPhone] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
   const [loading, setLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
+  // Validation helpers
+  const validatePhone = (phoneNumber: string): string | null => {
+    // Indonesia phone format: +62XXXXXXXXXX or 08XXXXXXXXXX or 62XXXXXXXXXX
+    const phoneRegex = /^(\+62|62|0)[0-9]{9,11}$/;
+    if (!phoneNumber) return "Nomor telepon diperlukan";
+    const cleanedPhone = phoneNumber.replace(/\s/g, "");
+    if (!phoneRegex.test(cleanedPhone)) {
+      return "Format: +6281234567 atau 0812345678";
+    }
+    return null;
+  };
+
+  const validateLicense = (license: string): string | null => {
+    // Indonesia SIM format: 8-12 digits
+    const licenseRegex = /^\d{8,12}$/;
+    if (!license) return "Nomor SIM diperlukan";
+    if (!licenseRegex.test(license)) {
+      return "Nomor SIM harus 8-12 digit (contoh: 12345678)";
+    }
+    return null;
+  };
+
+  const validateDriverForm = (): Record<string, string> => {
+    const errors: Record<string, string> = {};
+
+    if (!fullName.trim()) errors.fullName = "Nama lengkap diperlukan";
+    if (!email.includes("@")) errors.email = "Email tidak valid";
+    if (password.length < 6) errors.password = "Password minimal 6 karakter";
+
+    const phoneError = validatePhone(phone);
+    if (phoneError) errors.phone = phoneError;
+
+    const licenseError = validateLicense(licenseNumber);
+    if (licenseError) errors.license = licenseError;
+
+    return errors;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate form if registering
+    if (!isLogin) {
+      const errors = validateDriverForm();
+      if (Object.keys(errors).length > 0) {
+        setFormErrors(errors);
+        const firstError = Object.values(errors)[0];
+        toast.error(firstError);
+        return;
+      }
+    }
+
+    setFormErrors({});
     setLoading(true);
     try {
       if (isLogin) {
@@ -83,9 +135,14 @@ export default function DriverAuth() {
                   value={fullName} 
                   onChange={(e) => setFullName(e.target.value)} 
                   placeholder="Nama sesuai KTP" 
-                  className="rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500" 
+                  className={`rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 ${
+                    formErrors.fullName ? "border-red-500" : ""
+                  }`}
                   required 
                 />
+                {formErrors.fullName && (
+                  <p className="text-xs text-red-600 mt-1">{formErrors.fullName}</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="phone" className="text-slate-700 font-semibold ml-1">Nomor Telepon</Label>
@@ -95,9 +152,14 @@ export default function DriverAuth() {
                   value={phone} 
                   onChange={(e) => setPhone(e.target.value)} 
                   placeholder="0812xxxx" 
-                  className="rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500" 
+                  className={`rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 ${
+                    formErrors.phone ? "border-red-500" : ""
+                  }`}
                   required 
                 />
+                {formErrors.phone && (
+                  <p className="text-xs text-red-600 mt-1">{formErrors.phone}</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="licenseNumber" className="text-slate-700 font-semibold ml-1">Nomor SIM</Label>
@@ -106,9 +168,14 @@ export default function DriverAuth() {
                   value={licenseNumber} 
                   onChange={(e) => setLicenseNumber(e.target.value)} 
                   placeholder="Nomor SIM aktif" 
-                  className="rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500" 
+                  className={`rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 ${
+                    formErrors.license ? "border-red-500" : ""
+                  }`}
                   required 
                 />
+                {formErrors.license && (
+                  <p className="text-xs text-red-600 mt-1">{formErrors.license}</p>
+                )}
               </div>
             </>
           )}
@@ -121,9 +188,14 @@ export default function DriverAuth() {
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               placeholder="driver@email.com" 
-              className="rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500" 
+              className={`rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 ${
+                formErrors.email ? "border-red-500" : ""
+              }`}
               required 
             />
+            {formErrors.email && (
+              <p className="text-xs text-red-600 mt-1">{formErrors.email}</p>
+            )}
           </div>
           
           <div className="space-y-1.5">
@@ -134,10 +206,15 @@ export default function DriverAuth() {
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               placeholder="••••••••" 
-              className="rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500" 
+              className={`rounded-xl border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 ${
+                formErrors.password ? "border-red-500" : ""
+              }`}
               required 
               minLength={6} 
             />
+            {formErrors.password && (
+              <p className="text-xs text-red-600 mt-1">{formErrors.password}</p>
+            )}
           </div>
 
           <Button 
