@@ -367,11 +367,25 @@ function MidtransKeysTab() {
 
   const toggleEnv = useMutation({
     mutationFn: async (env: string) => {
-      const { error } = await supabase
+      const { data: existing } = await supabase
         .from("payment_settings")
-        .update({ active_environment: env })
-        .eq("gateway", "midtrans");
-      if (error) throw error;
+        .select("id")
+        .eq("gateway", "midtrans")
+        .maybeSingle();
+
+      if (!existing) {
+        // Buat row jika belum ada
+        const { error } = await supabase
+          .from("payment_settings")
+          .insert({ gateway: "midtrans", active_environment: env, is_active: true } as any);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("payment_settings")
+          .update({ active_environment: env } as any)
+          .eq("gateway", "midtrans");
+        if (error) throw error;
+      }
     },
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ["admin-payment-settings", "midtrans"] });

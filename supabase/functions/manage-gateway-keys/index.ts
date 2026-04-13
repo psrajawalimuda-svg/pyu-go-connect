@@ -99,9 +99,10 @@ Deno.serve(async (req: Request) => {
     }
 
     throw new Error("Invalid action");
-  } catch (error: any) {
+  } catch (err: unknown) {
+    const error = err as Error;
     console.error("manage-gateway-keys error:", error);
-    return new Response(JSON.stringify({ error: (error as Error).message }), { 
+    return new Response(JSON.stringify({ error: error.message }), { 
       status: error.message === "Unauthorized" ? 401 : (error.message.includes("Forbidden") ? 403 : 500), 
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
     });

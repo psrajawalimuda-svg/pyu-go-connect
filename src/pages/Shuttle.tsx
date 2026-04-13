@@ -38,6 +38,14 @@ export default function Shuttle() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("booking");
+
+  const handleTabChange = (val: string) => {
+    if (activeTab === "booking" && val === "history" && lockedUntil) {
+      releaseSeats();
+    }
+    setActiveTab(val);
+  };
+
   const [step, setStep] = useState<Step>("routes");
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -61,6 +69,7 @@ export default function Shuttle() {
   const [sessionId] = useState(() => user?.id || `guest-${generateUUID()}`);
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>("");
+  const [timerExpired, setTimerExpired] = useState(false);
 
   const { data: serviceTypes } = useQuery({
     queryKey: ["shuttle-service-types"],
@@ -186,6 +195,15 @@ export default function Shuttle() {
   }, [selectedScheduleId, selectedSeats, sessionId, refetchSeats]);
 
   useEffect(() => {
+    // Release seats on unmount if they were locked
+    return () => {
+      if (lockedUntil) {
+        releaseSeats();
+      }
+    };
+  }, [lockedUntil, releaseSeats]);
+
+  useEffect(() => {
     if (!lockedUntil) return;
 
     const interval = setInterval(() => {
@@ -194,9 +212,10 @@ export default function Shuttle() {
 
       if (diff <= 0) {
         clearInterval(interval);
-        setTimeLeft("Waktu Habis");
+        setTimeLeft("0:00");
         setLockedUntil(null);
-        toast.error("Waktu pemesanan habis. Silakan pilih kursi kembali.");
+        setTimerExpired(true);
+        toast.error("Sesi pemesanan berakhir. Kursi telah dilepaskan.");
         setStep("seats");
         return;
       }
@@ -311,6 +330,7 @@ export default function Shuttle() {
         return;
       }
       
+      setTimerExpired(false);
       setLockedUntil(Date.now() + 10 * 60000);
       setStep("guest_info");
     } catch (err: any) {
@@ -459,8 +479,27 @@ export default function Shuttle() {
         <p className="text-primary-foreground/70 text-sm">Pesan kursi shuttle — tanpa perlu akun</p>
       </div>
 
+      {/* STICKY COUNTDOWN TIMER */}
+      {timeLeft && (step === "guest_info" || step === "payment") && (
+        <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-primary/10 shadow-sm px-4 py-2 animate-in slide-in-from-top duration-300">
+          <div className="max-w-md mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-2 text-primary">
+              <Timer className="w-4 h-4 animate-pulse" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Sisa Waktu Pemesanan</span>
+            </div>
+            <div className={cn(
+              "px-3 py-1 rounded-full font-mono font-extrabold text-sm flex items-center gap-1.5",
+              timeLeft.startsWith("0:") ? "bg-red-100 text-red-600 animate-pulse" : "bg-primary/10 text-primary"
+            )}>
+              <Clock className="w-3.5 h-3.5" />
+              {timeLeft}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="px-4 mt-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="booking">Pesan Tiket</TabsTrigger>
             <TabsTrigger value="history">Riwayat Saya</TabsTrigger>
@@ -735,34 +774,24 @@ export default function Shuttle() {
             {/* GUEST INFO */}
             {step === "guest_info" && (
               <div className="space-y-4">
-                {timeLeft && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-yellow-700">
-                      <Timer className="w-4 h-4 animate-pulse" />
-                      <span className="text-xs font-bold uppercase tracking-wider">Sisa Waktu Pembayaran</span>
-                    </div>
-                    <span className="font-mono font-bold text-yellow-800 bg-yellow-200/50 px-2 py-1 rounded text-sm">
-                      {timeLeft}
-                    </span>
-                  </div>
-                )}
-                <Card>
-                  <CardHeader>
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader className="pb-2">
                     <CardTitle className="text-base">Info Penumpang</CardTitle>
-                    <p className="text-xs text-muted-foreground">Tidak perlu akun</p>
+                    <p className="text-xs text-muted-foreground">Isi detail penumpang untuk tiket</p>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-4 pt-2">
                     <div className="space-y-2">
                       <Label htmlFor="gn">Nama Lengkap</Label>
-                      <Input id="gn" value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Nama Anda" />
+                      <Input id="gn" value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Contoh: Budi Santoso" className="h-11" />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="gp">Nomor HP</Label>
-                      <Input id="gp" type="tel" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="+62 812..." />
+                      <Label htmlFor="gp">Nomor WhatsApp</Label>
+                      <Input id="gp" type="tel" value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="08123456789" className="h-11" />
+                      <p className="text-[10px] text-muted-foreground italic">* E-Tiket akan dikirimkan melalui WhatsApp</p>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" className="flex-1" onClick={goBack}>Kembali</Button>
-                      <Button className="flex-1 gradient-primary text-primary-foreground font-bold" onClick={handleGuestInfoNext}>Lanjut ke Pembayaran</Button>
+                    <div className="flex gap-2 pt-2">
+                      <Button variant="outline" className="flex-1 h-11" onClick={goBack}>Kembali</Button>
+                      <Button className="flex-1 h-11 gradient-primary text-primary-foreground font-bold shadow-lg shadow-primary/20" onClick={handleGuestInfoNext}>Pilih Pembayaran</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -772,40 +801,29 @@ export default function Shuttle() {
             {/* PAYMENT */}
             {step === "payment" && (
               <div className="space-y-4">
-                {timeLeft && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-yellow-700">
-                      <Timer className="w-4 h-4 animate-pulse" />
-                      <span className="text-xs font-bold uppercase tracking-wider">Sisa Waktu Pembayaran</span>
-                    </div>
-                    <span className="font-mono font-bold text-yellow-800 bg-yellow-200/50 px-2 py-1 rounded text-sm">
-                      {timeLeft}
-                    </span>
-                  </div>
-                )}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Pembayaran</CardTitle>
-                    <p className="text-xs text-muted-foreground">{selectedRoute?.name} • {selectedSeats.length} kursi • Rp {totalFare.toLocaleString("id-ID")}</p>
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Metode Pembayaran</CardTitle>
+                    <p className="text-xs text-muted-foreground">Total: <span className="font-bold text-primary">Rp {totalFare.toLocaleString("id-ID")}</span> ({selectedSeats.length} Kursi)</p>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-3 pt-2">
                     <button onClick={handlePayCash} disabled={booking || processingPayment}
-                      className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-border hover:border-primary transition-colors">
-                      <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center"><Banknote className="w-6 h-6 text-primary" /></div>
-                      <div className="text-left"><p className="font-bold text-sm">Bayar Tunai</p><p className="text-xs text-muted-foreground">Bayar langsung saat naik</p></div>
+                      className="w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-white hover:border-primary hover:shadow-md transition-all">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0"><Banknote className="w-5 h-5 text-primary" /></div>
+                      <div className="text-left flex-1"><p className="font-bold text-sm">Bayar Tunai</p><p className="text-[10px] text-muted-foreground">Bayar ke sopir saat berangkat</p></div>
                     </button>
                     <button onClick={() => handlePayOnline("midtrans")} disabled={booking || processingPayment}
-                      className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-border hover:border-primary transition-colors">
-                      <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center"><CreditCard className="w-6 h-6 text-secondary" /></div>
-                      <div className="text-left"><p className="font-bold text-sm">Midtrans</p><p className="text-xs text-muted-foreground">GoPay, VA, Kartu Kredit</p></div>
+                      className="w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-white hover:border-primary hover:shadow-md transition-all">
+                      <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center shrink-0"><CreditCard className="w-5 h-5 text-secondary" /></div>
+                      <div className="text-left flex-1"><p className="font-bold text-sm">QRIS / E-Wallet / VA</p><p className="text-[10px] text-muted-foreground">Otomatis Terkonfirmasi</p></div>
                     </button>
                     <button onClick={() => handlePayOnline("xendit")} disabled={booking || processingPayment}
-                      className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-border hover:border-primary transition-colors">
-                      <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center"><CreditCard className="w-6 h-6 text-secondary" /></div>
-                      <div className="text-left"><p className="font-bold text-sm">Xendit</p><p className="text-xs text-muted-foreground">OVO, DANA, Transfer Bank</p></div>
+                      className="w-full flex items-center gap-4 p-4 rounded-xl border border-border bg-white hover:border-primary hover:shadow-md transition-all">
+                      <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center shrink-0"><CreditCard className="w-5 h-5 text-secondary" /></div>
+                      <div className="text-left flex-1"><p className="font-bold text-sm">Bank Transfer / OVO</p><p className="text-[10px] text-muted-foreground">Pembayaran Instan</p></div>
                     </button>
-                    {(booking || processingPayment) && <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}
-                    <Button variant="outline" className="w-full" onClick={goBack}>Kembali</Button>
+                    {(booking || processingPayment) && <div className="flex justify-center py-2"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}
+                    <Button variant="outline" className="w-full h-11" onClick={goBack}>Kembali</Button>
                   </CardContent>
                 </Card>
               </div>

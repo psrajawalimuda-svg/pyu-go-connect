@@ -1,9 +1,10 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SplashScreen } from "@/components/ui/SplashScreen";
 
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
@@ -59,60 +60,65 @@ function RouteFallback() {
   return <PageSkeleton />;
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route element={<AppLayout />}>
-              <Route path="/" element={<Index />} />
-              <Route path="/ride" element={<Ride />} />
-              <Route path="/shuttle" element={<Shuttle />} />
-              <Route path="/hotel" element={<Hotel />} />
-              <Route path="/hotel/:id" element={<HotelDetail />} />
-              <Route path="/wallet" element={<Wallet />} />
-              <Route path="/profile" element={<Profile />} />
-            </Route>
+const App = () => {
+  const [showSplash, setShowSplash] = useState(true);
 
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/driver/auth" element={<DriverAuth />} />
-            <Route path="/forbidden" element={<Forbidden />} />
-
-            <Route element={<ProtectedRoute requiredRole="moderator" />}>
-              <Route path="/driver" element={<DriverLayout />}>
-                <Route index element={<DriverDashboard />} />
-                <Route path="ride" element={<DriverActiveRide />} />
-                <Route path="shuttle" element={<DriverShuttle />} />
-                <Route path="earnings" element={<DriverEarnings />} />
-                <Route path="wallet" element={<DriverWallet />} />
-                <Route path="history" element={<DriverHistory />} />
-                <Route path="profile" element={<DriverProfile />} />
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+        <Toaster />
+        <Sonner />
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route element={<AppLayout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/ride" element={<Ride />} />
+                <Route path="/shuttle" element={<Shuttle />} />
+                <Route path="/hotel" element={<Hotel />} />
+                <Route path="/hotel/:id" element={<HotelDetail />} />
+                <Route path="/wallet" element={<Wallet />} />
+                <Route path="/profile" element={<Profile />} />
               </Route>
-            </Route>
 
-            <Route path="admin" element={<ProtectedRoute requiredRole="admin" />}>
-              <Route element={<AdminLayout />}>
-                <Route index element={<AdminOverview />} />
-                <Route path="rides" element={<AdminRides />} />
-                <Route path="shuttles" element={<AdminShuttles />} />
-                <Route path="hotels" element={<AdminHotels />} />
-                <Route path="drivers" element={<AdminDrivers />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="payments" element={<AdminPayments />} />
-                <Route path="withdrawals" element={<AdminWithdrawals />} />
-                <Route path="settings" element={<AdminSettings />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/driver/auth" element={<DriverAuth />} />
+              <Route path="/forbidden" element={<Forbidden />} />
+
+              <Route element={<ProtectedRoute requiredRole="moderator" />}>
+                <Route path="/driver" element={<DriverLayout />}>
+                  <Route index element={<DriverDashboard />} />
+                  <Route path="ride" element={<DriverActiveRide />} />
+                  <Route path="shuttle" element={<DriverShuttle />} />
+                  <Route path="earnings" element={<DriverEarnings />} />
+                  <Route path="wallet" element={<DriverWallet />} />
+                  <Route path="history" element={<DriverHistory />} />
+                  <Route path="profile" element={<DriverProfile />} />
+                </Route>
               </Route>
-            </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+              <Route path="admin" element={<ProtectedRoute requiredRole="admin" />}>
+                <Route element={<AdminLayout />}>
+                  <Route index element={<AdminOverview />} />
+                  <Route path="rides" element={<AdminRides />} />
+                  <Route path="shuttles" element={<AdminShuttles />} />
+                  <Route path="hotels" element={<AdminHotels />} />
+                  <Route path="drivers" element={<AdminDrivers />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="payments" element={<AdminPayments />} />
+                  <Route path="withdrawals" element={<AdminWithdrawals />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                </Route>
+              </Route>
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

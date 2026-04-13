@@ -39,7 +39,7 @@ export function SeatLayout({ vehicleType, seats, onSeatSelect, selectedSeats }: 
               disabled={status === "booked" || status === "reserved" || status === "driver"}
               onClick={() => seatData && onSeatSelect(seatData)}
               className={cn(
-                "w-12 h-12 rounded-lg flex flex-col items-center justify-center transition-all duration-200 border-2 relative",
+                "w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex flex-col items-center justify-center transition-all duration-200 border-2 relative",
                 status === "available" && "bg-background border-muted hover:border-primary hover:bg-primary/5",
                 status === "selected" && "bg-primary border-primary text-primary-foreground scale-105 shadow-md",
                 status === "booked" && "bg-muted border-muted-foreground/20 cursor-not-allowed opacity-60",
@@ -47,8 +47,8 @@ export function SeatLayout({ vehicleType, seats, onSeatSelect, selectedSeats }: 
                 status === "driver" && "bg-secondary/40 border-secondary text-secondary-foreground cursor-not-allowed"
               )}
             >
-              <Armchair className={cn("w-6 h-6", status === "driver" && "opacity-50")} />
-              <span className="text-[10px] font-bold mt-0.5">{isDriver ? "DRV" : seatNumber}</span>
+              <Armchair className={cn("w-5 h-5 sm:w-6 sm:h-6", status === "driver" && "opacity-50")} />
+              <span className="text-[9px] sm:text-[10px] font-bold mt-0.5">{isDriver ? "DRV" : seatNumber}</span>
               {status === "booked" && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-lg">
                   <div className="w-full h-0.5 bg-red-500/50 rotate-45" />
