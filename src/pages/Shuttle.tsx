@@ -285,6 +285,10 @@ export default function Shuttle() {
     setSelectedScheduleFare(selectedRoute?.base_fare ?? 0);
     setSelectedScheduleSeats(schedule.available_seats);
     setSelectedScheduleDeparture(schedule.departure_time);
+    // Clear previously selected pickup point when switching schedules
+    setSelectedPickupPoint(null);
+    setSelectedRayonId(null);
+    
     if (rayons && (rayons as any[]).length > 0) {
       setStep("pickup");
     } else {
@@ -293,9 +297,14 @@ export default function Shuttle() {
   };
 
   const handleSelectPickupPoint = (rayon: any, point: any) => {
+    if (!point || !point.id) {
+      toast.error("Titik jemput tidak valid");
+      return;
+    }
+    
     setSelectedRayonId(rayon.id);
     setSelectedPickupPoint(point);
-    setSelectedScheduleFare(Number(point.fare));
+    setSelectedScheduleFare(Number(point.fare) || selectedRoute?.base_fare || 0);
     setStep("seats");
   };
 
