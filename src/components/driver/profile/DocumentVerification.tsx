@@ -98,24 +98,27 @@ export function DocumentVerification({ driver, onUpdate }: DocumentVerificationP
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <DocItem 
             label="KTP (Kartu Tanda Penduduk)" 
             url={driver.ktp_url} 
-            loading={uploading === 'ktp_url'}
-            onUpload={(e) => handleUpload(e, 'ktp_url')}
+            loading={uploading === 'ktp'}
+            isLoading={uploadDocumentMutation.isPending && uploading === 'ktp'}
+            onUpload={(e) => handleUpload(e, 'ktp')}
           />
           <DocItem 
             label="SIM (Surat Izin Mengemudi)" 
             url={driver.sim_url} 
-            loading={uploading === 'sim_url'}
-            onUpload={(e) => handleUpload(e, 'sim_url')}
+            loading={uploading === 'sim'}
+            isLoading={uploadDocumentMutation.isPending && uploading === 'sim'}
+            onUpload={(e) => handleUpload(e, 'sim')}
           />
           <DocItem 
             label="STNK Kendaraan" 
             url={driver.vehicle_stnk_url} 
-            loading={uploading === 'vehicle_stnk_url'}
-            onUpload={(e) => handleUpload(e, 'vehicle_stnk_url')}
+            loading={uploading === 'stnk'}
+            isLoading={uploadDocumentMutation.isPending && uploading === 'stnk'}
+            onUpload={(e) => handleUpload(e, 'stnk')}
           />
         </div>
 
@@ -125,7 +128,7 @@ export function DocumentVerification({ driver, onUpdate }: DocumentVerificationP
             <div className="space-y-1">
               <p className="text-sm font-bold text-emerald-800">Keamanan Data Terjamin</p>
               <p className="text-[11px] text-emerald-700 leading-relaxed">
-                Dokumen Anda dienkripsi dan hanya digunakan untuk keperluan verifikasi identitas pengemudi. Format: JPG/PNG, maks. 5MB.
+                Dokumen Anda dienkripsi dan hanya digunakan untuk keperluan verifikasi identitas pengemudi. Format: PDF/JPG/PNG, maks. 10MB.
               </p>
             </div>
           </div>
@@ -135,7 +138,15 @@ export function DocumentVerification({ driver, onUpdate }: DocumentVerificationP
   );
 }
 
-function DocItem({ label, url, loading, onUpload }: { label: string, url: string | null, loading: boolean, onUpload: (e: any) => void }) {
+interface DocItemProps {
+  label: string;
+  url: string | null;
+  loading: boolean;
+  isLoading: boolean;
+  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+function DocItem({ label, url, loading, isLoading, onUpload }: DocItemProps) {
   return (
     <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-3">
       <div className="flex justify-between items-start">
@@ -155,17 +166,25 @@ function DocItem({ label, url, loading, onUpload }: { label: string, url: string
               <a href={url} target="_blank" rel="noreferrer"><Eye className="w-3.5 h-3.5 mr-1" /> Lihat</a>
             </Button>
             <label className="cursor-pointer">
-              <div className="bg-white text-slate-800 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-slate-50 transition-colors">
-                <Upload className="w-3.5 h-3.5" /> Ganti
+              <div className="bg-white text-slate-800 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50">
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-3.5 h-3.5" /> Ganti
+                  </>
+                )}
               </div>
-              <input type="file" className="hidden" accept="image/jpeg,image/png" onChange={onUpload} />
+              <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={onUpload} disabled={isLoading} />
             </label>
           </div>
         </div>
       ) : (
         <label className="cursor-pointer block">
           <div className="h-24 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-emerald-300 hover:bg-emerald-50 transition-all">
-            {loading ? (
+            {isLoading ? (
               <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
             ) : (
               <>
@@ -174,7 +193,7 @@ function DocItem({ label, url, loading, onUpload }: { label: string, url: string
               </>
             )}
           </div>
-          <input type="file" className="hidden" accept="image/jpeg,image/png" onChange={onUpload} disabled={loading} />
+          <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={onUpload} disabled={isLoading} />
         </label>
       )}
     </div>
