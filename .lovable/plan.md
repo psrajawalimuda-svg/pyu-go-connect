@@ -1,161 +1,81 @@
 
 
-# Analisis Komprehensif Aplikasi PYU GO
+# Pengembangan Modul Driver: Kendaraan & Profil
 
-## Overview
-PYU GO adalah super app transportasi (ride-hailing, shuttle, hotel) dengan 3 panel: User App (React), Driver Panel (React + Flutter), dan Admin Panel (React). Backend menggunakan Lovable Cloud dengan 10 Edge Functions.
-
----
-
-## A. BUILD ERRORS (Harus Segera Diperbaiki)
-
-### 1. VehicleInfo.tsx — `variant="white"` tidak valid
-Baris 223 & 231 menggunakan `variant="white"` yang tidak ada di Button component. Harus diganti ke `variant="ghost"` atau `variant="outline"`.
-
-### 2. Edge Functions — Tidak ada build error aktual
-Pesan "Check supabase/functions/..." adalah info, bukan error. Functions sudah ter-deploy.
+## Ringkasan
+Memperbaiki dan menyempurnakan modul Driver Profile dan Vehicle Management agar lebih robust, user-friendly, dan production-ready.
 
 ---
 
-## B. SECURITY ISSUES (Kritis)
+## Masalah yang Ditemukan
 
-### 1. Role assignment dari client-side (KRITIS)
-Di `useAuth.ts` baris 80-96, user bisa meng-assign role sendiri setelah signup:
-```typescript
-await supabase.from("user_roles").insert({
-  user_id: data.user.id,
-  role: "moderator" // atau "user"
-});
-```
-Ini adalah **privilege escalation vulnerability**. Meski ada RLS policy "Users can insert own role", user bisa memodifikasi request untuk insert role "admin". **Solusi**: Role assignment harus dilakukan di database trigger (`handle_new_user`) atau Edge Function, bukan di client.
-
-### 2. `dispatch-driver` — Tidak ada auth check
-Edge function `dispatch-driver` menggunakan service role key tanpa memverifikasi caller. Siapapun bisa memanggil endpoint ini.
-
-### 3. `audit_logs` — Tidak bisa INSERT
-Tabel `audit_logs` tidak punya INSERT RLS policy untuk authenticated users, tapi trigger `log_driver_changes()` menggunakan `SECURITY DEFINER` jadi tetap bisa insert. Ini sebenarnya OK.
-
-### 4. `process-ride-payment` — Tidak verifikasi caller identity
-Function hanya check `authHeader` exists tapi tidak memverifikasi siapa yang memanggil. Harus memastikan caller adalah admin atau system.
+1. **Driver registration metadata key mismatch** — `DriverAuth.tsx` mengirim `isDriver: true` tapi trigger `handle_new_user` membaca `is_driver`. Registrasi driver tidak pernah membuat record di tabel `drivers`.
+2. **Profil tidak menampilkan email** — Field `email` tidak ada di tabel `drivers`, jadi selalu "Email tidak tersedia".
+3. **PIN disimpan plain text** — `SecuritySettings.tsx` menyimpan PIN tanpa hashing.
+4. **Tidak ada validasi file type** saat upload dokumen (KTP/SIM/STNK) — hanya `accept="image/*"` tanpa server-side check.
+5. **Vehicle form tidak ada validasi plate format** — Nomor polisi bisa diisi sembarang.
+6. **Tidak ada konfirmasi hapus kendaraan yang proper** — Menggunakan `window.confirm()` bukan Dialog component.
+7. **Driver `email` field missing** — Perlu ditambahkan ke tabel `drivers` atau diambil dari auth user.
 
 ---
 
-## C. FUNCTIONAL BUGS
+## Rencana Perubahan
 
-### 1. Driver Registration Stuck
-Alur signup driver di `useAuth.ts`:
-1. `signUp()` → create auth user
-2. Insert `profiles` (via trigger `handle_new_user`)
-3. Insert `drivers` table ← **BISA GAGAL** jika email belum confirmed (session null → no auth.uid() → RLS block)
-4. Insert `user_roles` ← **JUGA GAGAL**
+### 1. Fix Registration Metadata Key
+**File:** `src/pages/driver/DriverAuth.tsx`
+- Ubah `isDriver: true` → `is_driver: true` agar cocok dengan trigger `handle_new_user`.
 
-**Solusi**: Pindahkan pembuatan driver record dan role ke database trigger atau Edge Function yang menggunakan service role.
+### 2. Tambah Kolom `email` ke Tabel `drivers`
+**Migration:**
+- Tambah kolom `email TEXT` ke tabel `drivers`.
+- Update trigger `handle_new_user` untuk mengisi `email` dari `NEW.email`.
+- Update trigger `handle_user_update` untuk sync email.
 
-### 2. `wallet_type` enum mismatch
-Di `Wallet.tsx` dan `DriverWallet.tsx`, wallet auto-create dilakukan via client. Jika enum `wallet_type` tidak cocok, insert akan gagal. Harus dipastikan enum values match.
+### 3. Perbaiki ProfilePhoto — Handle Missing Storage Bucket
+**File:** `src/components/driver/profile/ProfilePhoto.tsx`
+- Tidak ada perubahan major, sudah cukup baik.
 
-### 3. Admin Login Redirect — Double query
-Di `Auth.tsx` baris 29-33, setelah `signIn` berhasil, ada query tambahan ke `user_roles` untuk redirect. Ini redundan karena `useAuth` hook sudah fetch role via `onAuthStateChange`.
+### 4. Perbaiki BasicInfoForm — Ambil Email dari Auth
+**File:** `src/components/driver/profile/BasicInfoForm.tsx`
+- Tampilkan email dari driver record (setelah kolom ditambah).
 
----
+### 5. Perbaiki VehicleInfo — Better UX
+**File:** `src/components/driver/profile/VehicleInfo.tsx`
+- Ganti `window.confirm()` dengan AlertDialog component.
+- Tambah validasi format nomor polisi.
+- Tambah validasi tahun kendaraan (min 1990, max tahun sekarang + 1).
 
-## D. CODE QUALITY ISSUES
+### 6. Perbaiki SecuritySettings — Hash PIN
+**File:** `src/components/driver/profile/SecuritySettings.tsx`
+- Gunakan simple hash (SHA-256 via Web Crypto API) sebelum menyimpan PIN.
+- Verifikasi PIN lama sebelum update.
 
-### 1. Shuttle.tsx — 901 baris
-File terlalu besar, harus dipecah ke komponen terpisah (RouteSelector, DatePicker, SeatSelector, PaymentForm, ConfirmationView).
-
-### 2. `as any` overuse
-Banyak penggunaan `as any` di:
-- `AdminDrivers.tsx` baris 57, 119
-- `DriverDashboard.tsx` baris 60
-- `DriverWallet.tsx` baris 101
-- `AdminWithdrawals.tsx` baris 185, 357
-
-### 3. Missing error boundaries
-Tidak ada React Error Boundary. Jika query gagal, app bisa crash.
-
-### 4. Duplikasi kode
-- `haversineKm()` diduplikasi di `calculate-fare/index.ts` dan `dispatch-driver/index.ts`
-- Wallet auto-create logic diduplikasi di `Index.tsx`, `Wallet.tsx`, dan `DriverWallet.tsx`
-- `fmt()` number formatter diduplikasi di 5+ files
+### 7. Perbaiki DocumentVerification — File Size Validation
+**File:** `src/components/driver/profile/DocumentVerification.tsx`
+- Tambah validasi ukuran file (max 5MB).
+- Tambah validasi tipe file (hanya image/jpeg, image/png).
 
 ---
 
-## E. UX/UI ISSUES
+## Detail Teknis
 
-### 1. Bahasa tidak konsisten
-Campuran Indonesia dan English di seluruh app:
-- Auth page: "Sign In", "Full Name" (English)
-- Driver auth: "Nama Lengkap", "Masuk Sekarang" (Indonesia)
-- Admin: Mix "Withdrawal Requests" (English title) + "Menunggu" (Indonesia content)
-
-### 2. Guest checkout shuttle tanpa auth
-`shuttle_bookings` RLS punya `INSERT WITH CHECK (true)` — siapapun bisa insert. Ini by design untuk guest booking tapi tidak ada rate limiting.
-
-### 3. No pagination
-Admin pages (drivers, rides, withdrawals) hanya limit 100 tanpa pagination. Akan bermasalah saat data bertambah.
-
----
-
-## F. PERFORMANCE
-
-### 1. Admin stats query fetches all rows
-`AdminWithdrawals.tsx` baris 89-103 fetches ALL withdrawal_requests just to count by status. Harus menggunakan `count` atau database function.
-
-### 2. Realtime channels
-Multiple components subscribe ke realtime tanpa cleanup yang konsisten. Channel naming bisa bentrok.
-
----
-
-## G. RENCANA PERBAIKAN (Prioritas)
-
-### Phase 1 — Critical (Build + Security)
-1. **Fix VehicleInfo.tsx** — Ganti `variant="white"` → `variant="ghost"`
-2. **Fix role assignment** — Pindahkan ke `handle_new_user` trigger dengan default role
-3. **Fix driver registration** — Buat driver record via trigger/edge function, bukan client
-4. **Add auth to dispatch-driver** — Verifikasi caller
-
-### Phase 2 — Functional
-5. **Konsistensi bahasa** — Standarisasi ke Bahasa Indonesia
-6. **Refactor Shuttle.tsx** — Pecah menjadi 5-6 komponen
-7. **Tambah pagination** — Admin pages
-
-### Phase 3 — Quality
-8. **Error boundaries** — Tambah global + per-route
-9. **Hapus `as any`** — Type properly
-10. **Extract shared utils** — `haversineKm`, `fmt`, wallet auto-create
-
----
-
-## Technical Details
-
-### Migration untuk fix role assignment:
+### Migration SQL
 ```sql
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-BEGIN
-  INSERT INTO public.profiles (user_id, full_name)
-  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'full_name', ''));
-  
-  -- Auto-assign default role
-  INSERT INTO public.user_roles (user_id, role)
-  VALUES (NEW.id, 'user')
-  ON CONFLICT (user_id, role) DO NOTHING;
-  
-  RETURN NEW;
-END;
-$$;
+-- Add email column to drivers
+ALTER TABLE public.drivers ADD COLUMN IF NOT EXISTS email TEXT;
+
+-- Update handle_new_user to populate email
+CREATE OR REPLACE FUNCTION public.handle_new_user() ...
+  -- Add: email = NEW.email in INSERT INTO drivers
 ```
 
-### Files yang perlu diubah (Phase 1):
-- `src/components/driver/profile/VehicleInfo.tsx` — fix variant
-- `src/hooks/useAuth.ts` — remove client-side role insert
-- `supabase/functions/dispatch-driver/index.ts` — add auth check
-- 1 database migration — update `handle_new_user` trigger
-
-Apakah Anda ingin saya mulai dari Phase 1 (critical fixes)?
+### Files yang Diubah
+| File | Perubahan |
+|------|-----------|
+| `src/pages/driver/DriverAuth.tsx` | Fix `isDriver` → `is_driver` key |
+| `src/components/driver/profile/VehicleInfo.tsx` | AlertDialog, validasi plate & year |
+| `src/components/driver/profile/SecuritySettings.tsx` | PIN hashing via Web Crypto |
+| `src/components/driver/profile/DocumentVerification.tsx` | File size & type validation |
+| `src/components/driver/profile/BasicInfoForm.tsx` | Minor: email dari driver record |
+| 1 migration | Add `email` column + update triggers |
 
