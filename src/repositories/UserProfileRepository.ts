@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
 
 // Types
 export interface UserProfile {
@@ -9,7 +8,7 @@ export interface UserProfile {
   email?: string;
   phone?: string;
   avatar_url?: string;
-  gender?: string;
+  gender?: "male" | "female";
   date_of_birth?: string;
   address?: string;
   city?: string;
@@ -41,14 +40,7 @@ export interface UserSettings {
   updated_at: string;
 }
 
-/**
- * Repository for User Profile data operations
- * Handles all Supabase queries for user profile and settings
- */
 export class UserProfileRepository {
-  /**
-   * Fetch complete user profile data
-   */
   static async getProfile(userId: string): Promise<UserProfile | null> {
     const { data, error } = await supabase
       .from("profiles")
@@ -57,49 +49,40 @@ export class UserProfileRepository {
       .maybeSingle();
 
     if (error) throw error;
-    return data;
+    return data as UserProfile | null;
   }
 
-  /**
-   * Fetch user settings
-   */
   static async getSettings(userId: string): Promise<UserSettings | null> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("user_settings")
       .select("*")
       .eq("user_id", userId)
       .maybeSingle();
 
     if (error) throw error;
-    return data;
+    return data as UserSettings | null;
   }
 
-  /**
-   * Update user profile information
-   */
   static async updateProfile(
     userId: string,
     profile: Partial<UserProfile>
   ): Promise<UserProfile> {
     const { data, error } = await supabase
       .from("profiles")
-      .update(profile)
+      .update(profile as any)
       .eq("user_id", userId)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return data as UserProfile;
   }
 
-  /**
-   * Update user settings
-   */
   static async updateSettings(
     userId: string,
     settings: Partial<UserSettings>
   ): Promise<UserSettings> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("user_settings")
       .update(settings)
       .eq("user_id", userId)
@@ -107,14 +90,11 @@ export class UserProfileRepository {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as UserSettings;
   }
 
-  /**
-   * Initialize default user settings (called on first login)
-   */
   static async initializeSettings(userId: string): Promise<UserSettings> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("user_settings")
       .insert({
         user_id: userId,
@@ -135,12 +115,9 @@ export class UserProfileRepository {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as UserSettings;
   }
 
-  /**
-   * Upload user avatar to storage
-   */
   static async uploadAvatar(
     userId: string,
     file: File
@@ -156,9 +133,6 @@ export class UserProfileRepository {
     return { path: fileName, url: data.publicUrl };
   }
 
-  /**
-   * Change user password
-   */
   static async changePassword(
     currentPassword: string,
     newPassword: string
@@ -170,9 +144,6 @@ export class UserProfileRepository {
     if (error) throw error;
   }
 
-  /**
-   * Verify and update email
-   */
   static async updateEmail(newEmail: string): Promise<void> {
     const { error } = await supabase.auth.updateUser({
       email: newEmail,
@@ -181,13 +152,10 @@ export class UserProfileRepository {
     if (error) throw error;
   }
 
-  /**
-   * Verify phone number (OTP verification)
-   */
   static async verifyPhone(userId: string): Promise<void> {
     const { error } = await supabase
       .from("profiles")
-      .update({ phone_verified: true })
+      .update({ phone_verified: true } as any)
       .eq("user_id", userId);
 
     if (error) throw error;
