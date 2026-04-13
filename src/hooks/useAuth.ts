@@ -50,7 +50,7 @@ export function useAuth() {
   };
 
   const signUp = async (email: string, password: string, fullName: string, options?: { phone?: string; license_number?: string; isDriver?: boolean }) => {
-    // 1. Validasi awal untuk mencegah pendaftaran ganda berdasarkan phone atau license_number jika isDriver
+    // Validasi duplikasi driver sebelum signup
     if (options?.isDriver) {
       if (options.phone) {
         const { data: existingPhone } = await supabase
@@ -58,79 +58,38 @@ export function useAuth() {
           .select("id")
           .eq("phone", options.phone)
           .maybeSingle();
-        
         if (existingPhone) {
           return { error: new Error("Nomor telepon sudah terdaftar sebagai driver.") };
         }
       }
-
       if (options.license_number) {
         const { data: existingLicense } = await supabase
           .from("drivers")
           .select("id")
           .eq("license_number", options.license_number)
           .maybeSingle();
-        
         if (existingLicense) {
           return { error: new Error("Nomor SIM sudah terdaftar.") };
         }
       }
     }
 
+    // Signup — handle_new_user trigger creates profile, role, and driver record automatically
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { 
-        data: { 
+      options: {
+        data: {
           full_name: fullName,
           phone: options?.phone,
-        }, 
-        emailRedirectTo: window.location.origin 
+          license_number: options?.license_number,
+          is_driver: options?.isDriver || false,
+        },
+        emailRedirectTo: window.location.origin,
       },
     });
 
     if (error) return { error };
-
-    if (data.user) {
-      // Profile is created by handle_new_user trigger, update with phone if needed
-      if (options?.phone) {
-        await supabase.from("profiles").update({ phone: options.phone }).eq("user_id", data.user.id);
-      }
-
-      // Jika driver, inisialisasi tabel drivers
-      if (options?.isDriver) {
-        const { error: driverError } = await supabase.from("drivers").insert({
-          user_id: data.user.id,
-          full_name: fullName,
-          phone: options.phone || "",
-          license_number: options.license_number || "",
-          status: "offline",
-          is_verified: false, // Default false, requires admin verification
-        });
-        
-        if (driverError) {
-          console.error("Error creating driver profile:", driverError);
-          return { error: driverError };
-        }
-
-        // 4. Assign role 'moderator' (sebagai placeholder driver)
-        const { error: roleError } = await supabase.from("user_roles").insert({
-          user_id: data.user.id,
-          role: "moderator"
-        });
-
-        if (roleError) {
-          console.error("Error assigning role:", roleError);
-        }
-      } else {
-        // Default role 'user'
-        await supabase.from("user_roles").insert({
-          user_id: data.user.id,
-          role: "user"
-        });
-      }
-    }
-
     return { error: null };
   };
 
