@@ -31,7 +31,7 @@ export default function DriverAuth() {
         const { error } = await signUp(email, password, fullName, {
           phone,
           license_number: licenseNumber,
-          is_driver: true,
+          isDriver: true,
         });
         if (error) throw error;
         toast.success("Registration successful! Check your email to confirm.");
