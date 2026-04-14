@@ -100,21 +100,39 @@ function ScheduleForm({ schedule, routeId, onClose }: { schedule?: any; routeId:
   const [active, setActive] = useState(schedule?.active ?? true);
   const [saving, setSaving] = useState(false);
 
-  const { data: serviceTypes } = useQuery({
+  const { data: serviceTypes, isLoading: serviceTypesLoading, error: serviceTypesError } = useQuery({
     queryKey: ["shuttle-service-types"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("shuttle_service_types").select("*").order("name");
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase.from("shuttle_service_types").select("*").eq("active", true).order("name");
+        if (error) {
+          console.error("Service types query error:", error);
+          throw error;
+        }
+        console.log("Service types loaded:", data);
+        return data;
+      } catch (err) {
+        console.error("Service types fetch exception:", err);
+        throw err;
+      }
     },
   });
 
-  const { data: drivers } = useQuery({
+  const { data: drivers, isLoading: driversLoading, error: driversError } = useQuery({
     queryKey: ["admin-drivers-shuttle"],
     queryFn: async () => {
-      const { data, error } = await (supabase.from("drivers") as any).select("id, full_name").eq("is_verified", true).order("full_name");
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await (supabase.from("drivers") as any).select("id, full_name").eq("is_verified", true).order("full_name");
+        if (error) {
+          console.error("Drivers query error:", error);
+          throw error;
+        }
+        console.log("Drivers loaded:", data);
+        return data;
+      } catch (err) {
+        console.error("Drivers fetch exception:", err);
+        throw err;
+      }
     },
   });
 
@@ -163,6 +181,18 @@ function ScheduleForm({ schedule, routeId, onClose }: { schedule?: any; routeId:
 
   return (
     <div className="space-y-4">
+      {serviceTypesError && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-800 text-sm">
+          Error loading service types: {serviceTypesError instanceof Error ? serviceTypesError.message : "Unknown error"}
+        </div>
+      )}
+      
+      {driversError && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-800 text-sm">
+          Error loading drivers: {driversError instanceof Error ? driversError.message : "Unknown error"}
+        </div>
+      )}
+      
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label>Tanggal</Label>
@@ -176,17 +206,24 @@ function ScheduleForm({ schedule, routeId, onClose }: { schedule?: any; routeId:
       
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label>Jenis Layanan</Label>
-          <Select value={serviceTypeId} onValueChange={setServiceTypeId}>
+          <Label>Jenis Layanan {serviceTypesLoading && <span className="text-xs text-gray-500">(loading...)</span>}</Label>
+          <Select value={serviceTypeId} onValueChange={setServiceTypeId} disabled={serviceTypesLoading || !serviceTypes || serviceTypes.length === 0}>
             <SelectTrigger>
-              <SelectValue placeholder="Pilih Layanan" />
+              <SelectValue placeholder={serviceTypesLoading ? "Loading..." : "Pilih Layanan"} />
             </SelectTrigger>
             <SelectContent>
-              {serviceTypes?.map((st) => (
-                <SelectItem key={st.id} value={st.id}>{st.name}</SelectItem>
-              ))}
+              {serviceTypes && serviceTypes.length > 0 ? (
+                serviceTypes.map((st) => (
+                  <SelectItem key={st.id} value={st.id}>{st.name}</SelectItem>
+                ))
+              ) : (
+                <div className="p-2 text-sm text-gray-500">No service types available</div>
+              )}
             </SelectContent>
           </Select>
+          {!serviceTypes || serviceTypes.length === 0 && !serviceTypesLoading && (
+            <p className="text-xs text-red-600">No service types found in database</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label>Jenis Kendaraan</Label>

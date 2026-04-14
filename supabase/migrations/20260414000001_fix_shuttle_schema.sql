@@ -10,20 +10,24 @@ CREATE TABLE IF NOT EXISTS public.shuttle_service_types (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Only enable RLS if table was just created
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.role_table_grants WHERE table_name='shuttle_service_types') THEN
-    ALTER TABLE public.shuttle_service_types ENABLE ROW LEVEL SECURITY;
-    DROP POLICY IF EXISTS "Service types viewable by everyone" ON public.shuttle_service_types;
-    DROP POLICY IF EXISTS "Admins can manage service types" ON public.shuttle_service_types;
-    CREATE POLICY "Service types viewable by everyone" ON public.shuttle_service_types FOR SELECT USING (true);
-    CREATE POLICY "Admins can manage service types" ON public.shuttle_service_types FOR ALL USING (has_role(auth.uid(), 'admin'::app_role));
-    DROP TRIGGER IF EXISTS update_shuttle_service_types_updated_at ON public.shuttle_service_types;
-    CREATE TRIGGER update_shuttle_service_types_updated_at BEFORE UPDATE ON public.shuttle_service_types
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-  END IF;
-END $$;
+-- Ensure active column exists (add if missing from earlier migration)
+ALTER TABLE public.shuttle_service_types ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE public.shuttle_service_types ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now();
+
+-- Enable RLS for shuttle_service_types
+ALTER TABLE public.shuttle_service_types ENABLE ROW LEVEL SECURITY;
+
+-- Always ensure these policies exist (drop and recreate for consistency)
+DROP POLICY IF EXISTS "Service types viewable by everyone" ON public.shuttle_service_types;
+DROP POLICY IF EXISTS "Admins can manage service types" ON public.shuttle_service_types;
+
+CREATE POLICY "Service types viewable by everyone" ON public.shuttle_service_types FOR SELECT USING (true);
+CREATE POLICY "Admins can manage service types" ON public.shuttle_service_types FOR ALL USING (has_role(auth.uid(), 'admin'::app_role));
+
+-- Add trigger for updated_at if it doesn't exist
+DROP TRIGGER IF EXISTS update_shuttle_service_types_updated_at ON public.shuttle_service_types;
+CREATE TRIGGER update_shuttle_service_types_updated_at BEFORE UPDATE ON public.shuttle_service_types
+FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Add service_type_id and vehicle_type to shuttle_schedules (if not exists)
 ALTER TABLE public.shuttle_schedules
