@@ -25,7 +25,16 @@ export function ServiceVehicleSelector({
     const loadServices = async () => {
       try {
         setLoading(true);
+        console.log('Loading services for schedule:', scheduleId);
         const availableServices = await ShuttleService.getAvailableServices(scheduleId);
+        console.log('Services loaded:', availableServices);
+        
+        if (!availableServices || availableServices.length === 0) {
+          console.warn('No services found for schedule:', scheduleId);
+          setServices([]);
+          return;
+        }
+        
         setServices(availableServices);
         // Auto-select featured or first option
         const featured = availableServices.find(s => s.isFeatured);
@@ -36,6 +45,7 @@ export function ServiceVehicleSelector({
         }
       } catch (error) {
         console.error('Error loading services:', error);
+        setServices([]);
       } finally {
         setLoading(false);
       }
