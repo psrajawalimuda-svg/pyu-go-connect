@@ -123,35 +123,7 @@ export function useSessionManager(options: UseSessionManagerOptions = {}) {
   }, []);
 
   /**
-   * Recover expired session with password verification
-   */
-  const recoverSession = useCallback(async () => {
-    try {
-      // Validate session after recovery
-      const isValid = await validateSession();
-      
-      if (isValid) {
-        setIsSessionExpired(false);
-        setSessionExpiredTime(null);
-        setShowExpiryWarning(false);
-        
-        // Reload active sessions
-        await getActiveSessions();
-        
-        toast.success("Session recovered successfully");
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error("Error recovering session:", error);
-      toast.error("Failed to recover session");
-      return false;
-    }
-  }, [validateSession, getActiveSessions]);
-
-  /**
-   * Logout
+   * Logout (define first - no dependencies except primitives)
    */
   const handleLogout = useCallback(async () => {
     try {
@@ -170,7 +142,21 @@ export function useSessionManager(options: UseSessionManagerOptions = {}) {
   }, [navigate, onSessionEnd]);
 
   /**
-   * Validate session
+   * Get active sessions (define early - no dependencies)
+   */
+  const getActiveSessions = useCallback(async () => {
+    try {
+      const sessions = await sessionManagement.getActiveSessions();
+      setActiveSessions(sessions);
+      return sessions;
+    } catch (error) {
+      console.error("Error fetching active sessions:", error);
+      return [];
+    }
+  }, []);
+
+  /**
+   * Validate session (now handleLogout is defined)
    */
   const validateSession = useCallback(async () => {
     try {
@@ -210,18 +196,32 @@ export function useSessionManager(options: UseSessionManagerOptions = {}) {
   }, [handleLogout]);
 
   /**
-   * Get active sessions
+   * Recover expired session (now validateSession and getActiveSessions are defined)
    */
-  const getActiveSessions = useCallback(async () => {
+  const recoverSession = useCallback(async () => {
     try {
-      const sessions = await sessionManagement.getActiveSessions();
-      setActiveSessions(sessions);
-      return sessions;
+      // Validate session after recovery
+      const isValid = await validateSession();
+      
+      if (isValid) {
+        setIsSessionExpired(false);
+        setSessionExpiredTime(null);
+        setShowExpiryWarning(false);
+        
+        // Reload active sessions
+        await getActiveSessions();
+        
+        toast.success("Session recovered successfully");
+        return true;
+      }
+      
+      return false;
     } catch (error) {
-      console.error("Error fetching active sessions:", error);
-      return [];
+      console.error("Error recovering session:", error);
+      toast.error("Failed to recover session");
+      return false;
     }
-  }, []);
+  }, [validateSession, getActiveSessions]);
 
   /**
    * Revoke session (logout from other device)
