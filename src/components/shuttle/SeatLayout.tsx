@@ -12,7 +12,7 @@ export interface SeatInfo {
 }
 
 interface SeatLayoutProps {
-  vehicleType: "SUV" | "MiniCar" | "Hiace";
+  vehicleType: "SUV" | "MiniCar" | "Hiace" | "MINI_CAR";
   seats: SeatInfo[];
   onSeatSelect: (seat: SeatInfo) => void;
   selectedSeats: string[];
@@ -26,9 +26,18 @@ interface SeatLayoutProps {
  */
 export function SeatLayout({ vehicleType, seats, onSeatSelect, selectedSeats }: SeatLayoutProps) {
   
+  const normalizedVehicleType = vehicleType === "MINI_CAR" ? "MiniCar" : vehicleType;
+
   const renderSeat = (seatNumber: string, isDriver: boolean = false) => {
-    const seatData = seats.find(s => s.number === seatNumber);
-    const isSelected = selectedSeats.includes(seatNumber);
+    // Handle both "1" and "01" seat numbers
+    const seatData = seats.find(s => 
+      s.number === seatNumber || 
+      s.number === seatNumber.padStart(2, '0') ||
+      seatNumber === s.number.replace(/^0+/, '')
+    );
+    const isSelected = selectedSeats.includes(seatNumber) || 
+                       selectedSeats.includes(seatNumber.padStart(2, '0'));
+    
     const status = isDriver ? "driver" : (isSelected ? "selected" : (seatData?.status || "available"));
 
     return (
@@ -36,6 +45,7 @@ export function SeatLayout({ vehicleType, seats, onSeatSelect, selectedSeats }: 
         <Tooltip>
           <TooltipTrigger asChild>
             <button
+              type="button"
               disabled={status === "booked" || status === "reserved" || status === "driver"}
               onClick={() => seatData && onSeatSelect(seatData)}
               className={cn(
@@ -67,7 +77,7 @@ export function SeatLayout({ vehicleType, seats, onSeatSelect, selectedSeats }: 
   };
 
   const renderLayout = () => {
-    switch (vehicleType) {
+    switch (normalizedVehicleType) {
       case "SUV":
         return (
           <div className="flex flex-col gap-6 items-center p-4 sm:p-6 bg-accent/30 rounded-3xl border-4 border-accent w-full max-w-[280px] mx-auto relative overflow-hidden">
@@ -78,13 +88,13 @@ export function SeatLayout({ vehicleType, seats, onSeatSelect, selectedSeats }: 
               {renderSeat("D", true)}
             </div>
             {/* Middle Row */}
-            <div className="flex justify-between w-full px-1 sm:px-2">
+            <div className="flex justify-between w-full px-1 sm:px-2 gap-2">
               {renderSeat("2")}
               {renderSeat("3")}
               {renderSeat("4")}
             </div>
             {/* Back Row */}
-            <div className="flex justify-between w-full px-1 sm:px-2">
+            <div className="flex justify-between w-full px-1 sm:px-2 gap-2">
               {renderSeat("5")}
               {renderSeat("6")}
               {renderSeat("7")}
@@ -105,7 +115,7 @@ export function SeatLayout({ vehicleType, seats, onSeatSelect, selectedSeats }: 
               {renderSeat("D", true)}
             </div>
             {/* Middle Row */}
-            <div className="flex justify-between w-full px-1 sm:px-2">
+            <div className="flex justify-between w-full px-1 sm:px-2 gap-2">
               {renderSeat("2")}
               {renderSeat("3")}
               {renderSeat("4")}
@@ -118,35 +128,52 @@ export function SeatLayout({ vehicleType, seats, onSeatSelect, selectedSeats }: 
         );
       case "Hiace":
         return (
-          <div className="flex flex-col gap-3 items-center p-4 sm:p-6 bg-accent/30 rounded-3xl border-4 border-accent w-full max-w-[320px] mx-auto relative overflow-hidden">
+          <div className="flex flex-col gap-3 items-center p-4 sm:p-6 bg-accent/30 rounded-3xl border-4 border-accent w-full max-w-[340px] mx-auto relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-4 bg-accent/50 rounded-t-full" />
-            {/* Row 1 */}
+            {/* Row 1: Driver & 1 Seat */}
             <div className="flex justify-between w-full px-2 sm:px-4 mb-1">
               {renderSeat("1")}
+              <div className="w-10 sm:w-12 h-10 sm:h-12" /> {/* Gap */}
               {renderSeat("D", true)}
             </div>
-            {/* Row 2 */}
-            <div className="flex justify-between w-full px-1 sm:px-2">
+            {/* Row 2: 3 Seats */}
+            <div className="flex justify-between w-full px-1 sm:px-2 gap-1">
               {renderSeat("2")}
               {renderSeat("3")}
+              <div className="w-10 sm:w-12 h-10 sm:h-12" /> {/* Aisle */}
               {renderSeat("4")}
             </div>
-            {/* Row 3 */}
-            <div className="flex justify-between w-full px-1 sm:px-2">
+            {/* Row 3: 3 Seats */}
+            <div className="flex justify-between w-full px-1 sm:px-2 gap-1">
               {renderSeat("5")}
               {renderSeat("6")}
+              <div className="w-10 sm:w-12 h-10 sm:h-12" /> {/* Aisle */}
               {renderSeat("7")}
             </div>
-            {/* Row 4 */}
-            <div className="flex justify-between w-full px-1 sm:px-2">
+            {/* Row 4: 3 Seats */}
+            <div className="flex justify-between w-full px-1 sm:px-2 gap-1">
               {renderSeat("8")}
               {renderSeat("9")}
+              <div className="w-10 sm:w-12 h-10 sm:h-12" /> {/* Aisle */}
               {renderSeat("10")}
             </div>
-            {/* Row 5 */}
+            {/* Row 5: 4 Seats (Back Row) */}
+            <div className="flex justify-between w-full px-1 sm:px-2 gap-1">
+              {renderSeat("11")}
+              {renderSeat("12")}
+              {renderSeat("13")}
+              {renderSeat("14")}
+            </div>
+            {/* Baggage Area */}
             <div className="w-full py-2 bg-accent/50 rounded-b-xl flex items-center justify-center border-2 border-dashed border-accent mt-2">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Bagasi</span>
             </div>
+          </div>
+        );
+      default:
+        return (
+          <div className="p-8 text-center border-2 border-dashed rounded-xl">
+            <p className="text-sm text-muted-foreground">Layout kendaraan "{vehicleType}" belum tersedia</p>
           </div>
         );
     }
