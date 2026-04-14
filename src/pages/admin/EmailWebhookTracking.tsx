@@ -127,7 +127,7 @@ export default function EmailWebhookTracking() {
       setLoading(true);
 
       // Load webhook events
-      let query = supabase
+      let query = (supabase as any)
         .from("email_webhook_events")
         .select("*")
         .order("created_at", { ascending: false })
