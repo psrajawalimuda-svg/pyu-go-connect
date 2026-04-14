@@ -31,7 +31,7 @@ export default function PickupPointsTab() {
   const { data: rayons } = useQuery({
     queryKey: ["admin-rayons"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("shuttle_rayons").select("*, shuttle_routes(name)").order("name");
+      const { data, error } = await (supabase as any).from("shuttle_rayons").select("*").order("name");
       if (error) throw error;
       return data;
     },
@@ -40,7 +40,7 @@ export default function PickupPointsTab() {
   const { data: points, isLoading } = useQuery({
     queryKey: ["admin-pickup-points", filterRayonId],
     queryFn: async () => {
-      let query = (supabase as any).from("shuttle_pickup_points").select("*, shuttle_rayons(name, shuttle_routes(name))").order("stop_order");
+      let query = (supabase as any).from("shuttle_pickup_points").select("*, shuttle_rayons(name)").order("stop_order");
       if (filterRayonId !== "all") query = query.eq("rayon_id", filterRayonId);
       const { data, error } = await query;
       if (error) throw error;

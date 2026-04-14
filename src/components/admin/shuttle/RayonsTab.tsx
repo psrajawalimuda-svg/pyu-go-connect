@@ -26,18 +26,8 @@ function RayonForm({ rayon, onClose }: { rayon?: any; onClose: () => void }) {
   const qc = useQueryClient();
   const [name, setName] = useState(rayon?.name ?? "");
   const [description, setDescription] = useState(rayon?.description ?? "");
-  const [routeId, setRouteId] = useState<string>(rayon?.route_id ?? "");
   const [points, setPoints] = useState<PickupPoint[]>(rayon?.pickup_points ?? []);
   const [saving, setSaving] = useState(false);
-
-  const { data: routes } = useQuery({
-    queryKey: ["admin-shuttle-routes-simple"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("shuttle_routes").select("id, name").eq("active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const addPoint = () => {
     setPoints([...points, { stop_order: points.length + 1, name: "", departure_time: "", distance_meters: 0, fare: 0, active: true }]);
@@ -63,11 +53,10 @@ function RayonForm({ rayon, onClose }: { rayon?: any; onClose: () => void }) {
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error("Nama rayon wajib diisi"); return; }
-    if (!routeId) { toast.error("Pilih rute terlebih dahulu"); return; }
     setSaving(true);
     try {
       let currentRayonId = rayon?.id;
-      const rayonData = { name, description, route_id: routeId };
+      const rayonData = { name, description };
       
       if (currentRayonId) {
         const { error } = await supabase.from("shuttle_rayons").update(rayonData as any).eq("id", currentRayonId);
@@ -103,19 +92,6 @@ function RayonForm({ rayon, onClose }: { rayon?: any; onClose: () => void }) {
 
   return (
     <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-      <div className="space-y-2">
-        <Label>Rute Terkait</Label>
-        <Select value={routeId} onValueChange={setRouteId}>
-          <SelectTrigger>
-            <SelectValue placeholder="Pilih rute" />
-          </SelectTrigger>
-          <SelectContent>
-            {routes?.map((r) => (
-              <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
       <div className="space-y-2">
         <Label>Nama Rayon</Label>
         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="RAYON A" />

@@ -18,7 +18,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Refactored Components
 import { RouteSelector } from "@/components/shuttle/RouteSelector";
-import { DateSelector } from "@/components/shuttle/DateSelector";
 import { ServiceTypeSelector } from "@/components/shuttle/ServiceTypeSelector";
 import { VehicleTypeSelector } from "@/components/shuttle/VehicleTypeSelector";
 import { ScheduleSelector } from "@/components/shuttle/ScheduleSelector";
@@ -28,7 +27,7 @@ import { SeatSelector } from "@/components/shuttle/SeatSelector";
 import { GuestInfoForm } from "@/components/shuttle/GuestInfoForm";
 import { PaymentForm } from "@/components/shuttle/PaymentForm";
 
-type Step = "routes" | "date" | "service" | "vehicle" | "schedule" | "pickup" | "seats" | "guest_info" | "payment" | "confirmation";
+type Step = "routes" | "schedule" | "service" | "vehicle" | "pickup" | "seats" | "guest_info" | "payment" | "confirmation";
 
 const generateUUID = (): string => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -61,7 +60,6 @@ export default function Shuttle() {
 
   const [step, setStep] = useState<Step>("routes");
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedServiceTypeId, setSelectedServiceTypeId] = useState<string | null>(null);
   const [selectedVehicleType, setSelectedVehicleType] = useState<string | null>(null);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
@@ -110,21 +108,28 @@ export default function Shuttle() {
   });
 
   const { data: rayons } = useQuery({
-    queryKey: ["shuttle-rayons", selectedRouteId],
+    queryKey: ["shuttle-rayons"],
     queryFn: async () => {
-      if (!selectedRouteId) return [];
-      const { data, error } = await (supabase as any)
+      const { data: rayonData, error } = await (supabase as any)
         .from("shuttle_rayons")
         .select("*")
         .eq("active", true)
-        .eq("route_id", selectedRouteId)
         .order("name");
       if (error) throw error;
-      const rayonIds = data.map((r: any) => r.id);
-      const { data: points } = await (supabase as any).from("shuttle_pickup_points").select("*").eq("active", true).in("rayon_id", rayonIds).order("stop_order");
-      return data.map((r: any) => ({ ...r, pickup_points: (points || []).filter((p: any) => p.rayon_id === r.id) }));
+      
+      const rayonIds = rayonData.map((r: any) => r.id);
+      const { data: pointsData } = await (supabase as any)
+        .from("shuttle_pickup_points")
+        .select("*")
+        .eq("active", true)
+        .in("rayon_id", rayonIds)
+        .order("stop_order");
+      
+      return rayonData.map((r: any) => ({
+        ...r,
+        pickup_points: (pointsData || []).filter((p: any) => p.rayon_id === r.id)
+      }));
     },
-    enabled: !!selectedRouteId,
   });
 
   const { data: userBookings, isLoading: historyLoading } = useQuery({
@@ -243,35 +248,39 @@ export default function Shuttle() {
 
   const selectedRoute = routes?.find((r) => r.id === selectedRouteId);
   const selectedSchedule = selectedRoute?.schedules.find((s: any) => s.id === selectedScheduleId);
-  const availableDates = selectedRoute?.schedules.map((s: any) => new Date(s.departure_time)) ?? [];
   
+  // Filter schedules for current route
   const filteredSchedules = selectedRoute?.schedules.filter((s: any) =>
-    selectedDate && isSameDay(new Date(s.departure_time), selectedDate) &&
+    s.active && 
+    new Date(s.departure_time) > new Date() &&
     (!selectedServiceTypeId || s.service_type_id === selectedServiceTypeId) &&
     (!selectedVehicleType || s.vehicle_type === selectedVehicleType)
   ) ?? [];
 
-  const availableVehicles = Array.from(new Set(
-    selectedRoute?.schedules
-      .filter((s: any) => 
-        selectedDate && isSameDay(new Date(s.departure_time), selectedDate) &&
-        (!selectedServiceTypeId || s.service_type_id === selectedServiceTypeId) &&
-        s.available_seats > 0
-      )
-      .map((s: any) => s.vehicle_type)
-      .filter(Boolean)
-  )) as string[];
-
   const handleSelectRoute = (routeId: string) => {
     setSelectedRouteId(routeId);
-    setSelectedDate(undefined);
-    setStep("date");
+    setSelectedServiceTypeId(null);
+    setSelectedVehicleType(null);
+    setSelectedScheduleId(null);
+    setStep("schedule");
   };
 
-  const handleSelectDate = (date: Date | undefined) => {
-    if (!date) return;
-    setSelectedDate(date);
-    setStep("service");
+  const handleSelectSchedule = (schedule: any) => {
+    setSelectedScheduleId(schedule.id);
+    setSelectedScheduleFare(selectedRoute?.base_fare ?? 0);
+    setSelectedScheduleSeats(schedule.available_seats);
+    setSelectedScheduleDeparture(schedule.departure_time);
+    setSelectedPickupPoint(null);
+    setSelectedRayonId(null);
+    
+    // If schedule already has service/vehicle info, move to pickup; otherwise let user select
+    if (schedule.service_type_id && schedule.vehicle_type) {
+      setSelectedServiceTypeId(schedule.service_type_id);
+      setSelectedVehicleType(schedule.vehicle_type);
+      setStep("pickup");
+    } else {
+      setStep("service");
+    }
   };
 
   const handleSelectService = (serviceId: string) => {
@@ -281,23 +290,11 @@ export default function Shuttle() {
 
   const handleSelectVehicle = (vehicleType: string) => {
     setSelectedVehicleType(vehicleType);
-    setStep("schedule");
+    setStep("pickup");
   };
 
-  const handleSelectSchedule = (schedule: any) => {
-    setSelectedScheduleId(schedule.id);
-    setSelectedScheduleFare(selectedRoute?.base_fare ?? 0);
-    setSelectedScheduleSeats(schedule.available_seats);
-    setSelectedScheduleDeparture(schedule.departure_time);
-    // Clear previously selected pickup point when switching schedules
-    setSelectedPickupPoint(null);
-    setSelectedRayonId(null);
-    
-    if (rayons && (rayons as any[]).length > 0) {
-      setStep("pickup");
-    } else {
-      setStep("seats");
-    }
+  const handleSelectDate = (date: Date | undefined) => {
+    // This function is deprecated in new flow
   };
 
   const handleSelectPickupPoint = (rayon: any, point: any) => {
@@ -449,7 +446,6 @@ export default function Shuttle() {
     if (lockedUntil) releaseSeats();
     setStep("routes");
     setSelectedRouteId(null);
-    setSelectedDate(undefined);
     setSelectedServiceTypeId(null);
     setSelectedVehicleType(null);
     setSelectedScheduleId(null);
@@ -467,12 +463,11 @@ export default function Shuttle() {
   };
 
   const goBack = () => {
-    if (step === "date") setStep("routes");
-    else if (step === "service") setStep("date");
+    if (step === "schedule") setStep("routes");
+    else if (step === "service") setStep("schedule");
     else if (step === "vehicle") setStep("service");
-    else if (step === "schedule") setStep("vehicle");
-    else if (step === "pickup") setStep("schedule");
-    else if (step === "seats") setStep(rayons && (rayons as any[]).length > 0 ? "pickup" : "schedule");
+    else if (step === "pickup") setStep("vehicle");
+    else if (step === "seats") setStep(rayons && (rayons as any[]).length > 0 ? "pickup" : "vehicle");
     else if (step === "guest_info") {
       releaseSeats();
       setStep("seats");
@@ -514,7 +509,7 @@ export default function Shuttle() {
 
           <TabsContent value="booking" className="space-y-4">
             {step !== "confirmation" && (() => {
-              const steps: Step[] = ["routes", "date", "service", "vehicle", "schedule", "pickup", "seats", "guest_info", "payment", "confirmation"];
+              const steps: Step[] = ["routes", "schedule", "service", "vehicle", "pickup", "seats", "guest_info", "payment", "confirmation"];
               const currentIdx = steps.indexOf(step);
               const progress = ((currentIdx + 1) / steps.length) * 100;
               return (
@@ -537,12 +532,12 @@ export default function Shuttle() {
               />
             )}
 
-            {step === "date" && (
-              <DateSelector 
+            {step === "schedule" && (
+              <ScheduleSelector 
+                filteredSchedules={filteredSchedules}
                 selectedRoute={selectedRoute}
-                selectedDate={selectedDate}
-                availableDates={availableDates}
-                onSelectDate={handleSelectDate}
+                selectedDate={undefined}
+                onSelectSchedule={handleSelectSchedule}
                 onBack={goBack}
               />
             )}
@@ -551,7 +546,7 @@ export default function Shuttle() {
               <ServiceTypeSelector 
                 serviceTypes={serviceTypes}
                 selectedRoute={selectedRoute}
-                selectedDate={selectedDate}
+                selectedDate={undefined}
                 onSelectService={handleSelectService}
                 onBack={goBack}
               />
@@ -559,22 +554,12 @@ export default function Shuttle() {
 
             {step === "vehicle" && (
               <VehicleTypeSelector 
-                availableVehicles={availableVehicles}
+                availableVehicles={Array.from(new Set(filteredSchedules.map((s: any) => s.vehicle_type).filter(Boolean)))}
                 selectedRoute={selectedRoute}
-                selectedDate={selectedDate}
+                selectedDate={undefined}
                 serviceTypeName={serviceTypes?.find(st => st.id === selectedServiceTypeId)?.name}
                 vehicleDetails={vehicleDetails}
                 onSelectVehicle={handleSelectVehicle}
-                onBack={goBack}
-              />
-            )}
-
-            {step === "schedule" && (
-              <ScheduleSelector 
-                filteredSchedules={filteredSchedules}
-                selectedRoute={selectedRoute}
-                selectedDate={selectedDate}
-                onSelectSchedule={handleSelectSchedule}
                 onBack={goBack}
               />
             )}
