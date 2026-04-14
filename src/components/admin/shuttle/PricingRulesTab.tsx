@@ -193,11 +193,13 @@ export default function PricingRulesTab() {
     return serviceTypes.find((s: any) => s.id === serviceId)?.name || 'Unknown';
   };
 
-  const formatPrice = (amount: number) =>
-    amount.toLocaleString('id-ID', {
+  const formatPrice = (amount: number | null | undefined) => {
+    if (amount === null || amount === undefined) return '0';
+    return amount.toLocaleString('id-ID', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     });
+  };
 
   return (
     <div className="space-y-6">
@@ -393,12 +395,12 @@ export default function PricingRulesTab() {
                     <TableCell className="font-medium">
                       {getServiceName(rule.service_type_id)}
                     </TableCell>
-                    <TableCell>{rule.base_fare_multiplier.toFixed(1)}x</TableCell>
+                    <TableCell>{(rule.base_fare_multiplier ?? 1).toFixed(1)}x</TableCell>
                     <TableCell>
                       Rp {formatPrice(rule.cost_per_km)}
                     </TableCell>
                     <TableCell>
-                      {rule.peak_hours_multiplier.toFixed(1)}x
+                      {(rule.peak_hours_multiplier ?? 1).toFixed(1)}x
                     </TableCell>
                     <TableCell>
                       Rp {formatPrice(rule.base_rayon_surcharge)}
