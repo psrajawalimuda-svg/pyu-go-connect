@@ -88,8 +88,8 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ success: true, processed: reminders?.length }), {
       headers: { "Content-Type": "application/json" },
     });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+  } catch (err: unknown) {
+    return new Response(JSON.stringify({ error: (err as Error).message }), { status: 500 });
   }
 });
 
