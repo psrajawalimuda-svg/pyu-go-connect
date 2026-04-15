@@ -23,12 +23,29 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'esnext',
     minify: 'esbuild',
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 1000,
     reportCompressedSize: false,
     cssCodeSplit: true,
     sourcemap: false,
     rollupOptions: {
       output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor-core';
+            }
+            if (id.includes('@radix-ui')) {
+              return 'vendor-ui';
+            }
+            if (id.includes('recharts')) {
+              return 'vendor-charts';
+            }
+            if (id.includes('leaflet')) {
+              return 'vendor-map';
+            }
+            return 'vendor-others';
+          }
+        },
         entryFileNames: 'js/[name]-[hash].js',
         chunkFileNames: 'js/[name]-[hash].js',
         assetFileNames: ({ name }) => {
