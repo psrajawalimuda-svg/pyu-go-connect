@@ -625,12 +625,12 @@ export default function Shuttle() {
 
             {step === "guest_info" && (
               <GuestInfoForm 
-                guestName={guestName}
-                guestPhone={guestPhone}
-                setGuestName={setGuestName}
-                setGuestPhone={setGuestPhone}
-                onNext={handleGuestInfoNext}
-                onBack={goBack}
+                seatNumber={selectedSeats.length > 0 ? selectedSeats[0] : 1}
+                onSave={(name, phone) => {
+                  setGuestName(name);
+                  setGuestPhone(phone);
+                  handleGuestInfoNext();
+                }}
               />
             )}
 
