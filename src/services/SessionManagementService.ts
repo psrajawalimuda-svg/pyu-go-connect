@@ -154,10 +154,10 @@ class SessionManagementService {
       const ipAddress = await getIpAddress();
       
       return {
-        sessionId: session.id,
+        sessionId: (session as any).id || session.access_token?.substring(0, 36) || 'unknown',
         userId: session.user.id,
         deviceInfo,
-        createdAt: new Date(session.created_at),
+        createdAt: new Date((session as any).created_at || Date.now()),
         lastActivityAt: new Date(),
         expiresAt: new Date(Date.now() + SESSION_EXPIRY_HOURS * 60 * 60 * 1000),
         refreshTokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
@@ -318,12 +318,12 @@ class SessionManagementService {
       // Store audit log in database
       const auditLog = {
         user_id: session.user.id,
-        session_id: session.id,
+        session_id: (session as any).id || session.access_token?.substring(0, 36) || 'unknown',
         event,
         ip_address: ipAddress,
         user_agent: navigator.userAgent,
-        device_info: deviceInfo,
-        details: details || {},
+        device_info: JSON.parse(JSON.stringify(deviceInfo)) as Record<string, unknown>,
+        details: (details || {}) as Record<string, unknown>,
       };
       
       const { error } = await supabase
@@ -364,7 +364,7 @@ class SessionManagementService {
       return data?.map(log => ({
         sessionId: log.session_id,
         userId: log.user_id,
-        deviceInfo: JSON.parse(log.device_info || "{}"),
+        deviceInfo: JSON.parse(String(log.device_info || "{}")),
         createdAt: new Date(log.created_at),
         lastActivityAt: new Date(log.created_at),
         expiresAt: new Date(Date.now() + SESSION_EXPIRY_HOURS * 60 * 60 * 1000),
