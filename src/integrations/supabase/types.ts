@@ -450,8 +450,8 @@ export type Database = {
           email: string | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
-          full_name: string
-          gender: Database["public"]["Enums"]["gender_type"]
+          full_name: string | null
+          gender: Database["public"]["Enums"]["gender_type"] | null
           id: string
           is_verified: boolean
           ktp_number: string | null
@@ -459,7 +459,7 @@ export type Database = {
           ktp_verified_at: string | null
           license_number: string | null
           location: unknown
-          phone: string
+          phone: string | null
           pin_hash: string | null
           prefers_bike: boolean
           prefers_bike_women: boolean
@@ -488,8 +488,8 @@ export type Database = {
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
-          full_name: string
-          gender?: Database["public"]["Enums"]["gender_type"]
+          full_name?: string | null
+          gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
           is_verified?: boolean
           ktp_number?: string | null
@@ -497,7 +497,7 @@ export type Database = {
           ktp_verified_at?: string | null
           license_number?: string | null
           location?: unknown
-          phone: string
+          phone?: string | null
           pin_hash?: string | null
           prefers_bike?: boolean
           prefers_bike_women?: boolean
@@ -526,8 +526,8 @@ export type Database = {
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
-          full_name?: string
-          gender?: Database["public"]["Enums"]["gender_type"]
+          full_name?: string | null
+          gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
           is_verified?: boolean
           ktp_number?: string | null
@@ -535,7 +535,7 @@ export type Database = {
           ktp_verified_at?: string | null
           license_number?: string | null
           location?: unknown
-          phone?: string
+          phone?: string | null
           pin_hash?: string | null
           prefers_bike?: boolean
           prefers_bike_women?: boolean
