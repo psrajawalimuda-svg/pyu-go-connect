@@ -1,3 +1,4 @@
+import React, { memo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,7 @@ interface SeatSelectorProps {
   layoutData?: VehicleLayout | null;
 }
 
-export function SeatSelector({
+export const SeatSelector = memo(({
   selectedRoute,
   selectedScheduleDeparture,
   selectedPickupPoint,
@@ -32,7 +33,7 @@ export function SeatSelector({
   onConfirmSeats,
   onBack,
   layoutData
-}: SeatSelectorProps) {
+}: SeatSelectorProps) => {
   const farePerSeat = selectedSeats.length > 0 ? Math.round(totalFare / selectedSeats.length) : 0;
   
   return (
@@ -120,4 +121,6 @@ export function SeatSelector({
       </Card>
     </div>
   );
-}
+});
+
+SeatSelector.displayName = "SeatSelector";

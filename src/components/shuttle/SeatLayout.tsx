@@ -1,4 +1,4 @@
-import React, { useMemo, memo } from "react";
+import React, { useMemo, memo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Armchair, Info, Luggage } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -84,6 +84,11 @@ export function SeatLayout({ vehicleType, seats, onSeatSelect, selectedSeats, la
 
   const selectedSet = useMemo(() => new Set(selectedSeats), [selectedSeats]);
 
+  const handleItemClick = useCallback((seatNumber: string) => {
+    const seatData = seatMap.get(seatNumber);
+    if (seatData) onSeatSelect(seatData);
+  }, [seatMap, onSeatSelect]);
+
   const renderSeat = (seatNumber: string, isDriver: boolean = false, absoluteStyles?: React.CSSProperties, seatClass?: string) => {
     const seatData = seatMap.get(seatNumber);
     const isSelected = selectedSet.has(seatNumber) || selectedSet.has(seatNumber.padStart(2, '0'));
@@ -97,7 +102,7 @@ export function SeatLayout({ vehicleType, seats, onSeatSelect, selectedSeats, la
         absoluteStyles={absoluteStyles}
         seatClass={seatClass}
         status={status}
-        onClick={() => seatData && onSeatSelect(seatData)}
+        onClick={() => handleItemClick(seatNumber)}
       />
     );
   };
@@ -241,8 +246,7 @@ export function SeatLayout({ vehicleType, seats, onSeatSelect, selectedSeats, la
   };
 
   return (
-    <TooltipProvider>
-      <div className="w-full py-8 bg-card rounded-2xl shadow-inner border">
+    <div className="w-full py-8 bg-card rounded-2xl shadow-inner border">
         <div className="flex items-center justify-center gap-6 mb-8 px-4 flex-wrap">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded bg-background border border-muted" />
@@ -271,6 +275,5 @@ export function SeatLayout({ vehicleType, seats, onSeatSelect, selectedSeats, la
           </p>
         </div>
       </div>
-    </TooltipProvider>
   );
 }

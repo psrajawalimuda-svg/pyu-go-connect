@@ -376,13 +376,13 @@ export default function Shuttle() {
     changeStep("seats");
   };
 
-  const handleSeatClick = (seat: any) => {
-    if (selectedSeats.includes(seat.number)) {
-      setSelectedSeats(selectedSeats.filter(s => s !== seat.number));
-    } else {
-      setSelectedSeats([...selectedSeats, seat.number]);
-    }
-  };
+  const handleSeatClick = useCallback((seat: any) => {
+    setSelectedSeats(prev => 
+      prev.includes(seat.number) 
+        ? prev.filter(s => s !== seat.number) 
+        : [...prev, seat.number]
+    );
+  }, []);
 
   const handleConfirmSeats = async () => {
     if (selectedSeats.length === 0) {
