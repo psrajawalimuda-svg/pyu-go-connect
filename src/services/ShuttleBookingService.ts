@@ -150,9 +150,7 @@ export class ShuttleBookingService {
         };
       }
 
-      const result = data as any;
-
-      if (result?.error) {
+      if (data.error) {
         // Get available seats for error response
         const availableSeats = await this.getAvailableSeats(request.scheduleId);
 
@@ -171,7 +169,7 @@ export class ShuttleBookingService {
 
         return {
           success: false,
-          error: result.error,
+          error: data.error,
           availableSeats
         };
       }
@@ -185,15 +183,15 @@ export class ShuttleBookingService {
         {
           user_id: userId,
           schedule_id: request.scheduleId,
-          booking_id: result?.booking_id,
-          seats_booked: result?.seats_booked
+          booking_id: data.booking_id,
+          seats_booked: data.seats_booked
         }
       );
 
       return {
         success: true,
-        bookingId: result?.booking_id,
-        message: `Successfully booked ${result?.seats_booked} seat(s)`
+        bookingId: data.booking_id,
+        message: `Successfully booked ${data.seats_booked} seat(s)`
       };
     } catch (err: any) {
       await log_security_event(
